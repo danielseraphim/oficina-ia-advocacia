@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Como ele escolhe a próxima palavra</title>
+<!--
+  Animação da oficina — bloco 2.
+  Autocontida: sem internet, sem biblioteca externa. Abre em qualquer
+  navegador (Firefox incluído) direto do arquivo.
+
+  Teclas:  espaço = próxima palavra · A = automático · P = pesos · R = gerar de novo
+
+  O SORTEIO É DE VERDADE. Não há frase pré-escrita: existe um pequeno
+  autômato de estados (MODELO, abaixo) em que cada estado traz as
+  candidatas com suas probabilidades. A cada passo o programa sorteia
+  uma candidata DENTRO do recorte, respeitando os pesos — então rodar de
+  novo produz outra frase, e às vezes a segunda colocada ganha.
+  Todos os caminhos foram escritos para dar frase juridicamente correta
+  (art. 413 do Código Civil).
+
+  Os números são autorados à mão, e o rodapé da tela diz isso.
+-->
+<style>
+  /* As mesmas fontes do tema, embutidas em base64 no fontes.css ao lado.
+     O iframe é um documento separado: sem este import ele cairia em
+     Georgia/Consolas e destoaria do resto do deck. */
+  @import url('fontes.css');
+
+  :root {
+    --papel:   #FDFCF7;
+    --tinta:   #1B1B1F;
+    /* Escurecidas em 16/08 junto com o tema, pelo mesmo motivo: projeção.
+       Contraste sobre o papel de 8,5:1 para 11,4:1 e de 3,5:1 para 5,2:1 —
+       o segundo estava abaixo do mínimo para texto corrido. */
+    --tinta-2: #3A3833;
+    --apagado: #6F6A60;
+    --rubrica: #8E2B21;
+    --fio:     #D9D4C9;
+    --azul:    #2E5F96;   /* mais escuro que o do tema: tem de sobreviver ao projetor */
+    --azul-barra: #4A86C9;
+    --vidro:   1;
+  }
+
+  /* Tudo é dimensionado em rem, e o rem acompanha a altura da janela.
+     Assim a mesma tela serve o slide de 1280x720 e a janela do navegador. */
+  html { font-size: clamp(11px, 2vh, 21px); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  /* Papel puro. As três manchas de luz que ficavam aqui saíram em 16/08, pela
+     mesma razão do tema: luz pintada no fundo não vem de lugar nenhum e lê
+     como mancha. A luz agora mora no painel, que é quem brilha. */
+  body {
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: 'Spectral', Georgia, serif;
+    overflow: hidden;
+
+    display: grid;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    row-gap: 1.15rem;
+    padding: 1.7rem 3.2rem 1.2rem;
+  }
+
+  .cabeca {
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--rubrica);
+    border-bottom: 1px solid var(--fio);
+    padding-bottom: 0.6rem;
+  }
+
+  /* Painel de vidro, como o <pre> do tema — refeito em 16/08 para LER COMO
+     TELA e ler de longe: tom azul-acinzentado com degrau de valor visível (o
+     antigo era quase o branco do papel, e a diferença morria no projetor),
+     reflexo diagonal no alto, e halo frio vazando por trás da borda, que é a
+     retroiluminação. O saturate() saiu: ele acendia a cor DENTRO do painel,
+     o contrário do que vidro faz. Medidas em rem, para a animação servir o
+     slide de 1280x720 e a janela cheia do plano B. */
+  .painel {
+    background-color: rgba(224, 234, 246, calc(0.78 + 0.16 * (1 - var(--vidro))));
+    background-image: linear-gradient(158deg,
+      rgba(255,255,255, calc(0.62 * var(--vidro))) 0%,
+      rgba(255,255,255, 0) 46%);
+    border: 1px solid rgba(255, 255, 255, calc(0.9 * var(--vidro)));
+    border-radius: 0.85rem;
+    box-shadow:
+      0 0.4rem 4.4rem 1rem rgba(74,134,201, calc(0.30 * var(--vidro))),
+      0 0.5rem 1.7rem rgba(27,27,31, calc(0.10 * var(--vidro))),
+      inset 0 1px 0 rgba(255,255,255, calc(0.95 * var(--vidro)));
+    padding: 0.85rem 1.5rem 1rem;
+  }
+  .painel .titulo {
+    font-size: 0.85rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--apagado);
+    margin-bottom: 0.45rem;
+  }
+
+  .mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+
+  /* Mono em tinta cheia e peso 500 (real, embutido), como o prompt do tema:
+     é a voz da máquina, e era o texto mais fino da animação. */
+  #prompt { font-size: 1.25rem; line-height: 1.5; font-weight: 500; color: var(--tinta); }
+  #saida  { font-size: 1.6rem;  line-height: 1.55; min-height: 2.4em; }
+  #saida .cursor {
+    display: inline-block; width: 0.5em; height: 1em;
+    background: var(--tinta-2); vertical-align: baseline;
+    animation: pisca 1s steps(1) infinite;
+  }
+  @keyframes pisca { 50% { opacity: 0; } }
+
+  .palavra { border-radius: 0.2rem; padding: 0 0.15rem; transition: background .4s, box-shadow .4s; }
+  .palavra.nova { animation: chega .45s ease-out; }
+  @keyframes chega { from { opacity: 0; transform: translateY(0.4rem); } }
+
+  /* peso de atenção (--w de 0 a 1). Fundo mais forte que na v1 e um
+     sublinhado sólido, que é o que sobrevive a projetor fraco. */
+  .palavra.pesada {
+    background: rgba(46, 95, 150, calc(0.15 + 0.40 * var(--w)));
+    box-shadow: inset 0 -0.18rem 0 rgba(46, 95, 150, calc(0.35 + 0.55 * var(--w)));
+  }
+
+  /* ---- área central ---- */
+  #meio {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    column-gap: 3.4rem;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  /* altura reservada para a lista mais longa (3 dentro + divisória + 3 fora):
+     assim as linhas não sobem e descem a cada palavra, e o destaque do
+     sorteio não persegue um alvo que se move. */
+  #candidatas { display: flex; flex-direction: column; gap: 0.3rem; min-height: 15.4rem; }
+
+  .cand {
+    display: grid;
+    grid-template-columns: minmax(0, 9.2rem) minmax(0, 1fr) 3.4rem;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.34rem 0.6rem;
+    border-radius: 0.5rem;
+    transition: background .15s, opacity .3s;
+  }
+  .cand .w  { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 1.15rem; color: var(--tinta); }
+  .cand .pc { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 0.9rem; color: var(--apagado); text-align: right; }
+  .cand .barra { height: 0.62rem; background: rgba(27,27,31,0.07); border-radius: 0.31rem; overflow: hidden; }
+  .cand .barra i {
+    display: block; height: 100%; width: 0;
+    background: var(--azul-barra); border-radius: 0.31rem;
+    transition: width .4s ease-out;
+  }
+  .cand.girando { background: rgba(46,95,150,0.17); }
+  .cand.vencedora { background: rgba(142,43,33,0.11); }
+  .cand.vencedora .w { color: var(--rubrica); font-weight: 500; }
+  .cand.vencedora .barra i { background: var(--rubrica); }
+  .cand.fora { opacity: 0.34; }
+  .cand.fora .barra i { background: var(--apagado); }
+
+  .corte {
+    display: flex; align-items: center; gap: 0.8rem;
+    margin: 0.25rem 0.6rem;
+    color: var(--apagado);
+    font-size: 0.82rem; letter-spacing: 0.13em; text-transform: uppercase;
+  }
+  .corte::before, .corte::after { content: ''; flex: 1; border-top: 1px dashed var(--fio); }
+
+  #direita { display: flex; flex-direction: column; min-height: 0; padding-top: 0.4rem; }
+  #legenda { font-size: 1.12rem; line-height: 1.5; color: var(--tinta-2); }
+  .titulo-leg {
+    font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--apagado); margin-bottom: 0.5rem;
+  }
+
+  /* histórico — a mesma pergunta, nas rodadas anteriores. É o que prova,
+     sem eu precisar afirmar, que a resposta não estava guardada em lugar
+     nenhum: ela é sorteada de novo a cada vez. */
+  #historico {
+    margin-top: auto;            /* encosta no pé da coluna */
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--fio);
+    min-height: 0;
+  }
+  .hist-item {
+    display: grid;
+    grid-template-columns: 1.4rem minmax(0, 1fr);
+    column-gap: 0.7rem;
+    margin-bottom: 0.4rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--tinta-2);
+  }
+  .hist-item:last-child { margin-bottom: 0; }
+  .hist-item .n {
+    font-family: 'Spectral', Georgia, serif;
+    color: var(--rubrica); font-weight: 500; text-align: right;
+  }
+  .hist-item.recem { animation: chega .5s ease-out; }
+  .hist-mais { font-size: 0.82rem; color: var(--apagado); margin-bottom: 0.4rem; padding-left: 2.1rem; }
+
+  /* ---- controles ---- */
+  #controles {
+    display: flex; align-items: center; gap: 1.1rem;
+    border-top: 1px solid var(--fio);
+    padding-top: 0.75rem;
+  }
+  button {
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 0.98rem; color: var(--tinta);
+    background: var(--papel);
+    border: 1px solid var(--fio); border-radius: 0.5rem;
+    padding: 0.4rem 0.9rem; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { border-color: var(--apagado); }
+  button .tecla {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.78rem; color: var(--apagado); margin-left: 0.45rem;
+  }
+  button.ativo { border-color: var(--rubrica); color: var(--rubrica); }
+  #nota { margin-left: auto; font-size: 0.82rem; color: var(--apagado); text-align: right; line-height: 1.45; }
+</style>
+</head>
+<body>
+
+<div class="cabeca">Como ele escolhe a próxima palavra</div>
+
+<div class="painel">
+  <div class="titulo">O que eu perguntei</div>
+  <div id="prompt" class="mono"></div>
+</div>
+
+<div class="painel">
+  <div class="titulo">O que ele responde — uma palavra por vez</div>
+  <div id="saida" class="mono"></div>
+</div>
+
+<div id="meio">
+  <div id="candidatas"></div>
+  <div id="direita">
+    <div id="legenda">
+      <div class="titulo-leg">O que está acontecendo</div>
+      <p id="leg-texto"></p>
+    </div>
+    <div id="historico" hidden>
+      <div class="titulo-leg">Mesma pergunta, rodadas anteriores</div>
+      <div id="hist-lista"></div>
+    </div>
+  </div>
+</div>
+
+<div id="controles">
+  <button id="b-prox">próxima palavra<span class="tecla">espaço</span></button>
+  <button id="b-auto">automático<span class="tecla">A</span></button>
+  <button id="b-peso">pesos: desligado<span class="tecla">P</span></button>
+  <button id="b-de-novo">gerar de novo<span class="tecla">R</span></button>
+  <div id="nota">números ilustrativos, para mostrar o mecanismo —<br>
+  na vida real ele corta o texto em pedaços menores (tokens)</div>
+</div>
+
+<script>
+'use strict';
+
+const PROMPT = 'Quando o juiz pode reduzir a multa de um contrato? Responda em uma frase.';
+//  0 Quando  1 o  2 juiz  3 pode  4 reduzir  5 a  6 multa  7 de  8 um
+//  9 contrato?  10 Responda  11 em  12 uma  13 frase.
+
+/* ------------------------------------------------------------------ *
+ *  O MODELO                                                           *
+ *  Cada estado: corte (quantas entram no sorteio), cands (palavra,    *
+ *  peso, próximo estado — null encerra a frase) e att (o que pesou:   *
+ *  p = índice no prompt, back = n palavras atrás na resposta).        *
+ *  As candidatas fora do corte aparecem apagadas e nunca são          *
+ *  sorteadas. Todo caminho fecha frase correta.                       *
+ * ------------------------------------------------------------------ */
+const MODELO = {
+
+  inicio: { corte: 2, att: [{p:10,w:0.8},{p:13,w:0.5}], cands: [
+    ['A', 34, 'A'], ['O', 30, 'O'],
+    ['Quando', 14, null, 'fora'], ['Se', 11, null, 'fora'], ['Nos', 6, null, 'fora'] ] },
+
+  /* ---- ramo "A cláusula penal / A multa / A penalidade ..." ---- */
+  A: { corte: 3, att: [{p:6,w:1},{p:9,w:0.55}], cands: [
+    ['cláusula', 34, 'A_clausula'], ['multa', 28, 'SujFem'], ['penalidade', 16, 'SujFem'],
+    ['redução', 9, null, 'fora'], ['sanção', 7, null, 'fora'], ['lei', 6, null, 'fora'] ] },
+
+  A_clausula: { corte: 2, att: [{back:1,w:1},{p:9,w:0.55}], cands: [
+    ['penal', 68, 'SujFem'], ['contratual', 16, 'SujFem'],
+    ['do', 7, null, 'fora'], ['prevista', 5, null, 'fora'], ['que', 4, null, 'fora'] ] },
+
+  SujFem: { corte: 3, att: [{p:3,w:0.9},{p:2,w:0.45}], cands: [
+    ['pode', 40, 'PodeFem'], ['deve', 28, 'PodeFem'], ['poderá', 14, 'PodeFem'],
+    ['será', 9, null, 'fora'], ['costuma', 5, null, 'fora'], ['precisa', 4, null, 'fora'] ] },
+
+  PodeFem: { corte: 1, att: [{back:1,w:1}], cands: [
+    ['ser', 88, 'SerFem'],
+    ['sofrer', 6, null, 'fora'], ['ter', 4, null, 'fora'], ['vir', 2, null, 'fora'] ] },
+
+  SerFem: { corte: 3, att: [{p:4,w:1},{p:6,w:0.6},{p:2,w:0.3}], cands: [
+    ['reduzida', 62, 'CondAg'], ['revista', 15, 'CondAg'], ['diminuída', 12, 'CondAg'],
+    ['anulada', 6, null, 'fora'], ['mantida', 3, null, 'fora'], ['afastada', 2, null, 'fora'] ] },
+
+  CondAg: { corte: 3, att: [{p:0,w:0.85},{p:2,w:0.5}], cands: [
+    ['quando', 30, 'CondSuj'], ['se', 27, 'CondSuj'], ['pelo', 25, 'Pelo'],
+    ['caso', 9, null, 'fora'], ['desde', 5, null, 'fora'], ['sempre', 4, null, 'fora'] ] },
+
+  Pelo: { corte: 2, att: [{p:2,w:1}], cands: [
+    ['juiz', 82, 'Cond'], ['magistrado', 10, 'Cond'],
+    ['julgador', 5, null, 'fora'], ['credor', 3, null, 'fora'] ] },
+
+  Cond: { corte: 2, att: [{p:0,w:0.85}], cands: [
+    ['quando', 46, 'CondSuj'], ['se', 38, 'CondSuj'],
+    ['caso', 8, null, 'fora'], ['desde', 5, null, 'fora'], ['sempre', 3, null, 'fora'] ] },
+
+  /* ---- ramo "O juiz pode reduzir ..." ---- */
+  O: { corte: 2, att: [{p:2,w:1},{p:1,w:0.4}], cands: [
+    ['juiz', 60, 'O_juiz'], ['magistrado', 14, 'O_juiz'],
+    ['valor', 12, null, 'fora'], ['contrato', 8, null, 'fora'], ['credor', 6, null, 'fora'] ] },
+
+  O_juiz: { corte: 3, att: [{p:3,w:0.95}], cands: [
+    ['pode', 42, 'JuizPode'], ['deve', 28, 'JuizPode'], ['poderá', 14, 'JuizPode'],
+    ['só', 9, null, 'fora'], ['tem', 4, null, 'fora'], ['costuma', 3, null, 'fora'] ] },
+
+  JuizPode: { corte: 2, att: [{p:4,w:1},{p:2,w:0.4}], cands: [
+    ['reduzir', 76, 'Reduzir'], ['rever', 12, 'Reduzir'],
+    ['anular', 6, null, 'fora'], ['aplicar', 4, null, 'fora'], ['afastar', 2, null, 'fora'] ] },
+
+  Reduzir: { corte: 2, att: [{p:5,w:0.7},{p:6,w:0.5}], cands: [
+    ['a', 72, 'Reduzir_a'], ['essa', 12, 'Reduzir_a'],
+    ['o', 9, null, 'fora'], ['uma', 4, null, 'fora'], ['tal', 3, null, 'fora'] ] },
+
+  Reduzir_a: { corte: 2, att: [{p:6,w:1},{p:9,w:0.45}], cands: [
+    ['multa', 52, 'Cond'], ['penalidade', 24, 'Cond'],
+    ['cláusula', 12, null, 'fora'], ['pena', 7, null, 'fora'], ['quantia', 5, null, 'fora'] ] },
+
+  /* ---- a condição: as duas hipóteses do art. 413 ---- */
+  CondSuj: { corte: 2, att: [{p:0,w:0.6}], cands: [
+    ['a', 44, 'CS_a'], ['o', 34, 'CS_o'],
+    ['houver', 10, null, 'fora'], ['já', 7, null, 'fora'], ['ficar', 5, null, 'fora'] ] },
+
+  CS_a: { corte: 2, att: [{p:9,w:0.85},{p:6,w:0.4}], cands: [
+    ['obrigação', 54, 'Obrigacao'], ['prestação', 24, 'Obrigacao'],
+    ['multa', 11, null, 'fora'], ['dívida', 7, null, 'fora'], ['parte', 4, null, 'fora'] ] },
+
+  Obrigacao: { corte: 3, att: [{back:1,w:0.9},{p:9,w:0.4}], cands: [
+    ['tiver', 36, 'Tiver'], ['já', 30, 'Ja'], ['houver', 20, 'Tiver'],
+    ['for', 8, null, 'fora'], ['estiver', 6, null, 'fora'] ] },
+
+  Ja: { corte: 2, att: [{back:2,w:0.8}], cands: [
+    ['tiver', 54, 'Tiver'], ['houver', 32, 'Tiver'],
+    ['foi', 9, null, 'fora'], ['estiver', 5, null, 'fora'] ] },
+
+  Tiver: { corte: 1, att: [{back:1,w:1}], cands: [
+    ['sido', 92, 'Sido'],
+    ['se', 5, null, 'fora'], ['sua', 3, null, 'fora'] ] },
+
+  Sido: { corte: 3, att: [{back:4,w:0.8},{p:9,w:0.4}], cands: [
+    ['cumprida', 60, 'Cumprida'], ['adimplida', 18, 'Cumprida'], ['executada', 12, 'Cumprida'],
+    ['paga', 6, null, 'fora'], ['satisfeita', 4, null, 'fora'] ] },
+
+  Cumprida: { corte: 2, att: [{back:1,w:0.9}], cands: [
+    ['em', 74, 'Em'], ['parcialmente.', 14, null],
+    ['apenas', 7, null, 'fora'], ['só', 5, null, 'fora'] ] },
+
+  Em: { corte: 1, att: [{back:2,w:0.7}], cands: [
+    ['parte.', 86, null],
+    ['partes.', 6, null, 'fora'], ['boa', 5, null, 'fora'], ['dobro.', 3, null, 'fora'] ] },
+
+  CS_o: { corte: 2, att: [{p:6,w:0.85}], cands: [
+    ['valor', 50, 'Valor'], ['montante', 26, 'Valor'],
+    ['juiz', 10, null, 'fora'], ['credor', 7, null, 'fora'], ['contrato', 4, null, 'fora'] ] },
+
+  Valor: { corte: 2, att: [{back:1,w:0.9},{p:6,w:0.6}], cands: [
+    ['for', 70, 'For'], ['se', 15, 'Se_mostrar'],
+    ['da', 8, null, 'fora'], ['é', 5, null, 'fora'] ] },
+
+  Se_mostrar: { corte: 2, att: [{back:2,w:0.7}], cands: [
+    ['mostrar', 72, 'For'], ['revelar', 16, 'For'],
+    ['provar', 6, null, 'fora'], ['tornar', 4, null, 'fora'] ] },
+
+  For: { corte: 3, att: [{p:6,w:0.7},{back:2,w:0.8}], cands: [
+    ['manifestamente', 46, 'Manifestamente'], ['excessivo.', 24, null], ['claramente', 16, 'Manifestamente'],
+    ['muito', 8, null, 'fora'], ['bastante', 6, null, 'fora'] ] },
+
+  Manifestamente: { corte: 2, att: [{back:1,w:0.9},{p:6,w:0.5}], cands: [
+    ['excessivo.', 80, null], ['desproporcional.', 12, null],
+    ['alto.', 5, null, 'fora'], ['exagerado.', 3, null, 'fora'] ] },
+};
+
+/* ------------------------------------------------------------------ */
+
+const $ = (id) => document.getElementById(id);
+const elPrompt = $('prompt'), elSaida = $('saida'), elCands = $('candidatas');
+const bProx = $('b-prox'), bAuto = $('b-auto'), bPeso = $('b-peso'), bDeNovo = $('b-de-novo');
+const legenda = $('leg-texto');
+
+const LEG_INICIAL = 'Ele não busca a resposta em lugar nenhum. A cada passo calcula ' +
+  'as palavras mais prováveis de vir a seguir, corta as improváveis, e sorteia ' +
+  'uma entre as que sobraram.';
+
+let estado = 'inicio';
+let gerado = [];        // palavras já escritas
+let historico = [];     // frases fechadas nas rodadas anteriores
+let pesos = false, auto = false, ocupado = false, fim = false;
+let timerAuto = null;
+
+const HIST_VISIVEIS = 3;
+
+const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function montaPrompt() {
+  elPrompt.innerHTML = '';
+  PROMPT.split(' ').forEach((w, i) => {
+    const s = document.createElement('span');
+    s.className = 'palavra'; s.dataset.p = i; s.textContent = w;
+    elPrompt.append(s, document.createTextNode(' '));
+  });
+}
+
+function reinicia() {
+  paraAuto();
+  // Reiniciar no meio de um passo deixava o passo em voo terminar e escrever a
+  // palavra dele na frase nova (saía "multa A quando cláusula a penal…", com
+  // erro de classList nulo no console). O paraAuto vem antes da trava para que
+  // o R sempre interrompa o automático; com o passo no ar, ignora o reset e o
+  // segundo R resolve.
+  if (ocupado) return;
+  estado = 'inicio'; gerado = []; fim = false;
+  elSaida.innerHTML = '<span class="cursor"></span>';
+  elCands.innerHTML = '';
+  limpaPesos();
+  desenhaHistorico();   // o histórico sobrevive ao R — ele é o argumento
+  legenda.textContent = historico.length
+    ? 'Mesma pergunta de novo. Repare que as candidatas são as mesmas, com as ' +
+      'mesmas probabilidades — o que muda é o resultado do sorteio.'
+    : LEG_INICIAL;
+}
+
+function desenhaHistorico() {
+  const caixa = $('historico'), lista = $('hist-lista');
+  caixa.hidden = historico.length === 0;
+  lista.innerHTML = '';
+  const escondidas = historico.length - HIST_VISIVEIS;
+  if (escondidas > 0) {
+    const m = document.createElement('div');
+    m.className = 'hist-mais';
+    m.textContent = escondidas === 1 ? 'e mais uma antes' : `e mais ${escondidas} antes`;
+    lista.appendChild(m);
+  }
+  historico.slice(-HIST_VISIVEIS).forEach((frase, k, arr) => {
+    const n = historico.length - arr.length + k + 1;
+    const d = document.createElement('div');
+    d.className = 'hist-item' + (n === historico.length ? ' recem' : '');
+    d.innerHTML = `<span class="n">${n}</span><span>${frase}</span>`;
+    lista.appendChild(d);
+  });
+}
+
+function limpaPesos() {
+  document.querySelectorAll('.palavra.pesada').forEach((el) => {
+    el.classList.remove('pesada'); el.style.removeProperty('--w');
+  });
+}
+
+function acendePesos(att) {
+  if (!pesos || !att) return;
+  for (const a of att) {
+    const el = ('p' in a)
+      ? elPrompt.querySelector(`[data-p="${a.p}"]`)
+      : elSaida.querySelector(`[data-g="${gerado.length - a.back}"]`);
+    if (el) { el.classList.add('pesada'); el.style.setProperty('--w', a.w); }
+  }
+}
+
+function montaCandidatas(st) {
+  elCands.innerHTML = '';
+  const max = st.cands[0][1];
+  st.cands.forEach((c, i) => {
+    if (i === st.corte) {
+      const d = document.createElement('div');
+      d.className = 'corte';
+      d.textContent = 'fora do recorte — não entram no sorteio';
+      elCands.appendChild(d);
+    }
+    const d = document.createElement('div');
+    d.className = 'cand' + (i >= st.corte ? ' fora' : '');
+    d.dataset.i = i;
+    d.innerHTML = `<span class="w">${c[0]}</span><span class="barra"><i></i></span><span class="pc">${c[1]}%</span>`;
+    elCands.appendChild(d);
+    // reflow forçado e só então a largura final: a barra cresce com transição
+    // sem depender de requestAnimationFrame, que não roda enquanto o slide
+    // está escondido (e a animação vive num iframe dentro do deck).
+    const barra = d.querySelector('i');
+    void barra.offsetWidth;
+    barra.style.width = (c[1] / max * 100) + '%';
+  });
+}
+
+/* sorteio de verdade: proporcional aos pesos, só entre as do recorte */
+function sorteia(st) {
+  const dentro = st.cands.slice(0, st.corte);
+  const soma = dentro.reduce((a, c) => a + c[1], 0);
+  let r = Math.random() * soma;
+  for (let i = 0; i < dentro.length; i++) { r -= dentro[i][1]; if (r <= 0) return i; }
+  return dentro.length - 1;
+}
+
+async function roleta(st, alvo) {
+  const dentro = [...elCands.querySelectorAll('.cand:not(.fora)')];
+  const venc = elCands.querySelector(`.cand[data-i="${alvo}"]`);
+
+  if (dentro.length > 1) {
+    // o destaque passeia e desacelera; o número de saltos é ajustado
+    // para parar exatamente na sorteada
+    const ritmo = [55, 55, 70, 70, 90, 120, 160, 210, 280, 360];
+    const n = dentro.length;
+    // o último salto é o de índice (passos-1): resolvemos extra para que
+    // (passos-1) % n caia exatamente na sorteada
+    const extra = ((alvo - ritmo.length + 1) % n + n) % n;
+    const passos = ritmo.length + extra;
+    for (let k = 0; k < passos; k++) {
+      dentro.forEach((d) => d.classList.remove('girando'));
+      dentro[k % n].classList.add('girando');
+      await dorme(ritmo[Math.min(k, ritmo.length - 1)]);
+    }
+    dentro.forEach((d) => d.classList.remove('girando'));
+  } else {
+    await dorme(320);
+  }
+  venc.classList.add('vencedora');
+  await dorme(430);
+}
+
+function escreve(palavra) {
+  const cursor = elSaida.querySelector('.cursor');
+  const s = document.createElement('span');
+  s.className = 'palavra nova'; s.dataset.g = gerado.length;
+  s.textContent = palavra;
+  elSaida.insertBefore(s, cursor);
+  elSaida.insertBefore(document.createTextNode(' '), cursor);
+  gerado.push(palavra);
+}
+
+async function umPasso() {
+  if (ocupado || fim) return;
+  ocupado = true;
+
+  const st = MODELO[estado];
+  limpaPesos();
+  montaCandidatas(st);
+  acendePesos(st.att);
+  await dorme(520);
+
+  const i = sorteia(st);
+  await roleta(st, i);
+  const [palavra, , proximo] = st.cands[i];
+  escreve(palavra);
+
+  // a legenda comenta o que acabou de acontecer, quando vale a pena
+  if (i > 0)
+    legenda.textContent = `O sorteio não pegou a primeira: saiu "${palavra}", ` +
+      `que tinha ${st.cands[i][1]}%. A frase inteira muda de rumo a partir daqui — ` +
+      `é por isso que a mesma pergunta sai diferente em dias diferentes.`;
+  else if (st.corte === 1)
+    legenda.textContent = 'Aqui quase não há escolha: uma palavra sozinha leva ' +
+      'quase toda a probabilidade, e o recorte fica com ela só.';
+  else if (pesos)
+    legenda.textContent = 'As palavras acesas são as que mais pesaram nesta escolha. ' +
+      'Ele pesa o que está na conversa — só o que está na conversa.';
+  else
+    legenda.textContent = LEG_INICIAL;
+
+  ocupado = false;
+
+  if (proximo == null) {
+    fim = true;
+    paraAuto();
+    historico.push(gerado.join(' '));
+    await dorme(450);
+    elCands.innerHTML = '';
+    const c = elSaida.querySelector('.cursor'); if (c) c.remove();
+    desenhaHistorico();
+    legenda.textContent = historico.length === 1
+      ? 'Frase pronta, em ' + gerado.length + ' sorteios — sem consultar lugar ' +
+        'nenhum. Aperte R e veja a mesma pergunta sair diferente.'
+      : 'Mesma pergunta, resposta outra. Nenhuma delas estava guardada em ' +
+        'lugar nenhum: cada palavra foi sorteada de novo, agora.';
+  } else {
+    estado = proximo;
+  }
+}
+
+function ligaAuto() {
+  auto = true; bAuto.classList.add('ativo');
+  const tique = async () => {
+    if (!auto) return;
+    await umPasso();
+    if (auto && !fim) timerAuto = setTimeout(tique, 480);
+  };
+  tique();
+}
+function paraAuto() {
+  auto = false; bAuto.classList.remove('ativo');
+  if (timerAuto) clearTimeout(timerAuto);
+}
+
+function togglePesos() {
+  pesos = !pesos;
+  bPeso.classList.toggle('ativo', pesos);
+  bPeso.innerHTML = `pesos: ${pesos ? 'ligado' : 'desligado'}<span class="tecla">P</span>`;
+  if (!pesos) limpaPesos(); else acendePesos(MODELO[estado] && MODELO[estado].att);
+}
+
+bProx.addEventListener('click', umPasso);
+bAuto.addEventListener('click', () => (auto ? paraAuto() : ligaAuto()));
+bPeso.addEventListener('click', togglePesos);
+bDeNovo.addEventListener('click', reinicia);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ') { e.preventDefault(); umPasso(); }
+  else if (e.key === 'a' || e.key === 'A') auto ? paraAuto() : ligaAuto();
+  else if (e.key === 'p' || e.key === 'P') togglePesos();
+  else if (e.key === 'r' || e.key === 'R') reinicia();
+});
+
+montaPrompt();
+reinicia();
+</script>
+</body>
+</html>

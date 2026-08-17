@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Por dentro do oráculo</title>
+<!--
+  Animação da oficina — bloco 9 (fechamento). v3.
+  Autocontida: sem internet, sem biblioteca externa. Abre em qualquer
+  navegador direto do arquivo — que é também o plano B se o iframe falhar.
+
+  Teclas:  espaço = próxima cena · R = de novo
+
+  O conceito (Daniel, 16/08): Delfos ATENDENDO POR APLICATIVO — a mesma
+  linguagem de chat da segunda animação do bloco 2, vestida de templo. O
+  indicador de "digitando" é fumaça. Os timestamps fazem a ponte temporal
+  sozinhos: a consulta de Creso é "de vinte e cinco séculos atrás", a de
+  Ulisses é "agora" — mesmo aplicativo, histórico antigo.
+
+  v3 — o que mudou sobre a v2:
+  · O templo ganhou carpintaria: cornija com dentículos, tímpano recuado,
+    colunas com capitel e base. Tudo CSS, tudo no relevo seco do tema.
+  · A animação virou o APANHADO da noite, explicitamente: o painel
+    "O que a noite mostrou" fica visível desde a cena 0, apagado, e cada
+    cena acende uma retomada — os dois prints, o concordar-não-é-conferir,
+    o advogado do diabo, a primeira animação. São retomadas de cena
+    ("vocês viram"), nunca enunciados de conduta — o decálogo segue morto.
+
+  A dramaturgia, em 5 cenas — DUAS consultas:
+    0  o aplicativo ("online há vinte e oito séculos") e o mapa do apanhado
+    1  Creso, a pergunta que pede o sim → resposta ambígua        [acende 1]
+    2  a auditoria do acerto: vencendo acertou, perdendo acertou  [acende 2]
+    3  Ulisses — OAB/Ítaca: "Onde eu estou errado?" → a fumaça
+       vacila e o oráculo some ("visto por último há vinte e
+       cinco séculos")                                            [acende 3]
+    4  a revelação: as barras da primeira animação, peso trocado
+       por agrado                                                 [acende 4]
+
+  As consultas são encenadas (a nota de rodapé diz isso). O visual das
+  barras reusa o da animacao-llm.html de propósito: a revelação É o
+  callback.
+-->
+<style>
+  @import url('fontes.css');
+
+  :root {
+    --papel:   #FDFCF7;
+    --tinta:   #1B1B1F;
+    /* Escurecidas em 16/08 junto com o tema, pelo mesmo motivo: projeção.
+       Contraste sobre o papel de 8,5:1 para 11,4:1 e de 3,5:1 para 5,2:1 —
+       o segundo estava abaixo do mínimo para texto corrido. */
+    --tinta-2: #3A3833;
+    --apagado: #6F6A60;
+    --rubrica: #8E2B21;
+    --fio:     #D9D4C9;
+    --azul:    #2E5F96;
+    --azul-barra: #4A86C9;
+    --pedra:   #F1EDE2;
+    --pedra-2: #E2DBC8;
+    --pedra-3: #CFC7B0;
+    --vidro:   1;
+  }
+
+  html { font-size: clamp(11px, 2vh, 21px); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  /* Papel puro. As duas manchas de luz que ficavam aqui saíram em 16/08, pela
+     mesma razão do tema: luz pintada no fundo não vem de lugar nenhum e lê
+     como mancha. A luz mora no aplicativo de Delfos, que é quem brilha. */
+  body {
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: 'Spectral', Georgia, serif;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    row-gap: 1.1rem;
+    padding: 1.7rem 3.2rem 1.2rem;
+  }
+
+  .cabeca {
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--rubrica);
+    border-bottom: 1px solid var(--fio);
+    padding-bottom: 0.6rem;
+  }
+
+  #meio {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
+    column-gap: 2.8rem;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  /* ==================== o edifício: chat vestido de templo ==================== */
+  #edificio {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 0.6rem;
+    align-items: stretch;
+    padding-top: 3.1rem;       /* o frontão mora aqui em cima */
+    min-height: 0;
+  }
+
+  /* ---- o frontão: cornija inclinada, tímpano recuado, dentículos ---- */
+  #frontao { position: absolute; top: 0; left: 0; right: 0; height: 3.1rem; }
+  #frontao .rampa {
+    position: absolute; inset: 0 0 0.82rem 0;
+    background: linear-gradient(178deg, var(--pedra-2), var(--pedra-3));
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    filter: drop-shadow(0 1px 0 rgba(255,255,255,0.85));
+  }
+  #frontao .timpano {
+    position: absolute; left: 4.5%; right: 4.5%; top: 0.42rem; bottom: 0.86rem;
+    background: linear-gradient(180deg, var(--papel), var(--pedra));
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  /* a cornija horizontal, com fileira de dentículos por baixo */
+  #frontao .cornija {
+    position: absolute; left: -0.35rem; right: -0.35rem; bottom: 0.42rem; height: 0.44rem;
+    background: linear-gradient(180deg, var(--pedra), var(--pedra-2));
+    box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 2px 4px rgba(27,27,31,0.16);
+    border-radius: 0.06rem;
+  }
+  #frontao .denticulos {
+    position: absolute; left: -0.2rem; right: -0.2rem; bottom: 0.06rem; height: 0.36rem;
+    background: repeating-linear-gradient(90deg,
+      var(--pedra-2) 0 0.34rem, transparent 0.34rem 0.62rem);
+  }
+
+  /* ---- as colunas: capitel (ábaco + equino), fuste estriado, base ---- */
+  .coluna {
+    width: 1.05rem;
+    position: relative;
+    margin-top: 0.18rem;
+    background:
+      repeating-linear-gradient(90deg,
+        rgba(27,27,31,0.10) 0 0.05rem, transparent 0.05rem 0.20rem),
+      linear-gradient(90deg, var(--pedra-2), #F7F4EB 46%, var(--pedra-2));
+    box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset, 0.14rem 0 0.32rem rgba(27,27,31,0.10);
+  }
+  .coluna::before {           /* capitel: ábaco em cima, equino embaixo */
+    content: ''; position: absolute; top: -0.14rem; left: -0.34rem; right: -0.34rem; height: 0.62rem;
+    background:
+      linear-gradient(180deg, var(--pedra) 0 38%, transparent 38%),
+      linear-gradient(180deg, transparent 0 30%, var(--pedra-2) 42%, var(--pedra-3));
+    clip-path: polygon(0 0, 100% 0, 100% 38%, 86% 100%, 14% 100%, 0 38%);
+    box-shadow: 0 1px 2px rgba(27,27,31,0.18);
+  }
+  .coluna::after {            /* base em dois degraus */
+    content: ''; position: absolute; bottom: -0.1rem; left: -0.3rem; right: -0.3rem; height: 0.5rem;
+    background: linear-gradient(180deg, var(--pedra-2) 0 45%, var(--pedra) 45%);
+    box-shadow: 0 2px 3px rgba(27,27,31,0.16);
+    border-radius: 0.05rem;
+  }
+
+  /* ---- o aplicativo — a mesma linguagem da segunda animação do bloco 2 ---- */
+  /* Delfos por aplicativo, com o mesmo vidro do <pre> do tema (16/08): tom
+     azul-acinzentado com degrau de valor visível, reflexo diagonal no alto e
+     halo frio vazando por trás da borda — retroiluminação. Sem saturate(),
+     que acendia a cor dentro do painel em vez de dessaturá-la. Medidas em
+     rem, para servir o slide de 1280x720 e a janela cheia do plano B. */
+  #chat {
+    display: flex; flex-direction: column; min-height: 0;
+    background-color: rgba(224, 234, 246, calc(0.78 + 0.16 * (1 - var(--vidro))));
+    background-image: linear-gradient(158deg,
+      rgba(255,255,255, calc(0.62 * var(--vidro))) 0%,
+      rgba(255,255,255, 0) 46%);
+    border: 1px solid rgba(255, 255, 255, calc(0.9 * var(--vidro)));
+    border-radius: 0.85rem;
+    box-shadow:
+      0 0.4rem 4.4rem 1rem rgba(74,134,201, calc(0.30 * var(--vidro))),
+      0 0.5rem 1.7rem rgba(27,27,31, calc(0.10 * var(--vidro))),
+      inset 0 1px 0 rgba(255,255,255, calc(0.95 * var(--vidro)));
+    overflow: hidden;
+  }
+  #chat-topo {
+    padding: 0.55rem 1rem 0.5rem;
+    border-bottom: 1px solid var(--fio);
+  }
+  #chat-topo .nome-app {
+    font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+    font-weight: 600; color: var(--tinta-2);
+  }
+  #chat-topo .status {
+    font-size: 0.74rem; color: var(--apagado); margin-top: 0.12rem;
+    transition: color .5s;
+  }
+  #chat-topo .status .ponto {
+    display: inline-block; width: 0.42rem; height: 0.42rem; border-radius: 50%;
+    background: #5B8C5A; margin-right: 0.32rem; vertical-align: 0.02rem;
+    transition: background .5s;
+  }
+  #chat-topo .status.sumiu .ponto { background: var(--apagado); }
+
+  /* a greca sob o cabeçalho — pátina, não fantasia */
+  #greca {
+    height: 0.42rem;
+    border-bottom: 1px solid var(--fio);
+    background:
+      repeating-linear-gradient(90deg,
+        var(--fio) 0 0.09rem, transparent 0.09rem 0.42rem,
+        var(--fio) 0.42rem 0.51rem, transparent 0.51rem 0.84rem),
+      repeating-linear-gradient(0deg, transparent 0 0.14rem, rgba(217,212,201,0.55) 0.14rem 0.28rem);
+    opacity: 0.8;
+  }
+
+  #chat-corpo {
+    flex: 1; min-height: 0; overflow: hidden;
+    padding: 0.8rem 1rem 0.5rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+
+  .quem {
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--apagado); margin-bottom: 0.22rem;
+  }
+  .quem .ts { letter-spacing: 0.06em; text-transform: none; font-size: 0.74rem; }
+  .bolha {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.92rem; line-height: 1.5; color: var(--tinta);
+    border: 1px solid var(--fio);
+    border-radius: 0.6rem;
+    padding: 0.5rem 0.8rem;
+    background: rgba(46,95,150,0.06);
+  }
+  .doConsulente { align-self: flex-end; max-width: 82%; }
+  .doConsulente .quem { text-align: right; }
+  .doOraculo { align-self: flex-start; max-width: 88%; }
+  .doOraculo .bolha {
+    background: rgba(253,252,247,0.8);
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 1.06rem;
+    letter-spacing: 0.01em;
+  }
+  .surge { animation: chega .45s ease-out; }
+  /* o "to" explícito importa: .cand, .veredito e .rec-item usam esta
+     animação com forwards partindo de opacity 0 */
+  @keyframes chega { from { opacity: 0; transform: translateY(0.4rem); } to { opacity: 1; transform: none; } }
+  .saindo { animation: esvai .5s ease-in forwards; }
+  @keyframes esvai { to { opacity: 0; transform: translateY(-0.4rem); } }
+
+  .vazia {
+    margin: auto;
+    font-size: 0.8rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--apagado);
+  }
+
+  /* o oráculo digitando: a fumaça é o indicador */
+  #digitando { align-self: flex-start; }
+  #digitando .bolha {
+    background: rgba(253,252,247,0.8);
+    display: flex; gap: 0.34rem; align-items: center;
+    padding: 0.62rem 0.9rem;
+  }
+  .fumo {
+    width: 0.62rem; height: 0.62rem; border-radius: 50%;
+    background: radial-gradient(circle at 38% 35%, rgba(139,135,126,0.85), rgba(139,135,126,0.25) 75%);
+    filter: blur(1.6px);
+    animation: sobe 1.15s ease-in-out infinite;
+  }
+  .fumo:nth-child(2) { animation-delay: 0.18s; }
+  .fumo:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes sobe {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+    45%      { transform: translateY(-0.34rem) scale(1.12); opacity: 1; }
+  }
+  #digitando.vacila .fumo { animation-duration: 0.42s; opacity: 0.5; }
+  #digitando.apaga .fumo { animation: nenhuma; transition: opacity 1.1s; opacity: 0; }
+  /* o indicador SEM fumaça — diante do prompt bem feito, o teatro acaba e
+     sobra o "digitando" de qualquer aplicativo: pontos sólidos, sem blur */
+  #digitando.seco .fumo {
+    filter: none;
+    background: var(--apagado);
+    width: 0.4rem; height: 0.4rem;
+  }
+
+  /* a resposta técnica: a voz solene (Spectral) era o teatro; a resposta
+     de trabalho sai em mono, como toda fala de máquina do deck */
+  .doOraculo .bolha.tecnica {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    white-space: pre-line;
+  }
+  .doConsulente .bolha.prompt {
+    white-space: pre-line;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+
+  /* o prompt bem feito derruba o templo: sobra o aplicativo */
+  #frontao, .coluna { transition: opacity 1.2s; }
+  #edificio.aberto #frontao, #edificio.aberto .coluna { opacity: 0.16; }
+
+  #composer {
+    border-top: 1px solid var(--fio);
+    padding: 0.5rem 1rem 0.6rem;
+  }
+  #campo {
+    border: 1px solid var(--fio); border-radius: 1.1rem;
+    background: var(--papel);
+    padding: 0.42rem 0.9rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.88rem; line-height: 1.45; color: var(--tinta);
+    min-height: 2.1rem;
+  }
+  #campo.vazio::before { content: 'consulte…'; color: var(--apagado); }
+  #campo .cursor {
+    display: inline-block; width: 0.5em; height: 1em;
+    background: var(--tinta-2); vertical-align: text-bottom;
+    animation: pisca 1s steps(1) infinite;
+  }
+  @keyframes pisca { 50% { opacity: 0; } }
+
+  /* as barras da revelação, no vocabulário exato da primeira animação */
+  #barras { display: none; flex-direction: column; gap: 0.34rem; margin: auto 0; }
+  #barras.mostra { display: flex; }
+  .cand {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 0.9rem;
+    row-gap: 0.2rem;
+    padding: 0.34rem 0.55rem;
+    border-radius: 0.5rem;
+    opacity: 0;
+    animation: chega 0.5s ease-out forwards;
+  }
+  .cand:nth-child(2) { animation-delay: 0.35s; }
+  .cand:nth-child(3) { animation-delay: 0.7s; }
+  .cand:nth-child(5) { animation-delay: 1.15s; }
+  .cand .w  { font-size: 0.98rem; line-height: 1.35; }
+  .cand .pc { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 0.88rem; color: var(--apagado); text-align: right; }
+  .cand .barra { grid-column: 1 / -1; height: 0.58rem; background: rgba(27,27,31,0.07); border-radius: 0.29rem; overflow: hidden; }
+  .cand .barra i { display: block; height: 100%; width: 0; background: var(--azul-barra); border-radius: 0.29rem; transition: width 0.9s 0.4s ease-out; }
+  .cand.vencedora { background: rgba(142,43,33,0.10); }
+  .cand.vencedora .w { color: var(--rubrica); font-weight: 500; }
+  .cand.vencedora .barra i { background: var(--rubrica); }
+  .cand.fora { opacity: 0; animation: chega-fora 0.5s 1.15s ease-out forwards; }
+  .cand.fora .w, .cand.fora .pc { color: var(--apagado); }
+  .cand.fora .barra i { background: var(--apagado); }
+  @keyframes chega-fora { from { opacity: 0; } to { opacity: 0.55; } }
+  .corte {
+    display: flex; align-items: center; gap: 0.8rem;
+    margin: 0.12rem 0.55rem;
+    color: var(--apagado);
+    font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase;
+    opacity: 0; animation: chega 0.5s 1s ease-out forwards;
+  }
+  .corte::before, .corte::after { content: ''; flex: 1; border-top: 1px dashed var(--fio); }
+
+  /* ============================ a coluna direita ============================ */
+  #lado { display: flex; flex-direction: column; gap: 1rem; min-height: 0; padding-top: 3.1rem; }
+
+  .titulo-leg {
+    font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--apagado); margin-bottom: 0.1rem;
+  }
+
+  /* o apanhado — visível desde o início, acendendo cena a cena.
+     São retomadas do que a sala VIU, nunca enunciados de conduta. */
+  #recap { display: flex; flex-direction: column; gap: 0.42rem; }
+  .rec-item {
+    display: grid;
+    grid-template-columns: 1.15rem minmax(0, 1fr);
+    column-gap: 0.55rem;
+    align-items: baseline;
+    font-size: 1.02rem; line-height: 1.4;
+    color: var(--apagado);
+    opacity: 0.5;
+    transition: opacity .6s, color .6s;
+  }
+  .rec-item .marc {
+    text-align: center;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.8rem;
+    color: var(--apagado);
+    transition: color .6s;
+  }
+  .rec-item.aceso { opacity: 1; color: var(--tinta); }
+  .rec-item.aceso .marc { color: var(--rubrica); font-weight: 600; }
+  .rec-item .de { color: var(--apagado); font-size: 0.9rem; }
+  .rec-item.aceso .de { color: var(--tinta-2); }
+
+  #auditoria { display: none; flex-direction: column; gap: 0.5rem; }
+  #auditoria.mostra { display: flex; }
+  .veredito {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--fio);
+    border-radius: 0.6rem;
+    background: rgba(253,252,247,0.6);
+    font-size: 1.02rem;
+    opacity: 0;
+    animation: chega 0.5s ease-out forwards;
+  }
+  .veredito + .veredito { animation-delay: 0.9s; }
+  .veredito .selo {
+    font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--rubrica);
+    border: 1px solid rgba(142,43,33,0.55);
+    border-radius: 0.3rem;
+    padding: 0.14rem 0.5rem;
+    transform: rotate(-3deg);
+  }
+
+  #legenda { margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--fio); }
+  #leg-texto { font-size: 1.08rem; line-height: 1.5; color: var(--tinta-2); }
+
+  /* ------------------------------ controles ------------------------------ */
+  #controles {
+    display: flex; align-items: center; gap: 1.1rem;
+    border-top: 1px solid var(--fio);
+    padding-top: 0.75rem;
+  }
+  button {
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 0.98rem; color: var(--tinta);
+    background: var(--papel);
+    border: 1px solid var(--fio); border-radius: 0.5rem;
+    padding: 0.4rem 0.9rem; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { border-color: var(--apagado); }
+  button .tecla {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.78rem; color: var(--apagado); margin-left: 0.45rem;
+  }
+  #nota { margin-left: auto; font-size: 0.82rem; color: var(--apagado); text-align: right; line-height: 1.45; }
+</style>
+</head>
+<body>
+
+<div class="cabeca">Por dentro do oráculo</div>
+
+<div id="meio">
+  <div id="edificio">
+    <div id="frontao">
+      <div class="rampa"></div>
+      <div class="timpano"></div>
+      <div class="cornija"></div>
+      <div class="denticulos"></div>
+    </div>
+    <div class="coluna"></div>
+    <div id="chat">
+      <div id="chat-topo">
+        <div class="nome-app">Oráculo de Delfos</div>
+        <div class="status" id="status"><span class="ponto"></span><span id="status-texto">online há vinte e oito séculos</span></div>
+      </div>
+      <div id="greca"></div>
+      <div id="chat-corpo"></div>
+      <div id="composer"><div id="campo" class="vazio"></div></div>
+    </div>
+    <div class="coluna"></div>
+  </div>
+
+  <div id="lado">
+    <div>
+      <div class="titulo-leg">O que a noite mostrou</div>
+      <div id="recap">
+        <div class="rec-item" id="rec-1"><span class="marc">·</span><span>a pergunta que pede o sim <span class="de">— os dois prints</span></span></div>
+        <div class="rec-item" id="rec-2"><span class="marc">·</span><span>concordar não é conferir <span class="de">— a segunda opinião</span></span></div>
+        <div class="rec-item" id="rec-3"><span class="marc">·</span><span>o sorteio de palavras <span class="de">— a primeira animação</span></span></div>
+        <div class="rec-item" id="rec-4"><span class="marc">·</span><span>contexto, lado e “a confirmar” <span class="de">— o prompt da demo</span></span></div>
+      </div>
+    </div>
+
+    <div id="auditoria">
+      <div class="titulo-leg">Auditoria do acerto</div>
+      <div id="auditoria-cartoes"></div>
+    </div>
+
+    <div id="legenda">
+      <div class="titulo-leg">O que está acontecendo</div>
+      <p id="leg-texto"></p>
+    </div>
+  </div>
+</div>
+
+<div id="controles">
+  <button id="b-prox">próxima cena<span class="tecla">espaço</span></button>
+  <button id="b-de-novo">de novo<span class="tecla">R</span></button>
+  <div id="nota">as consultas são encenadas — o mecanismo do sorteio<br>é o da primeira animação da noite</div>
+</div>
+
+<script>
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+const corpo = $('chat-corpo'), campo = $('campo');
+const status = $('status'), statusTexto = $('status-texto');
+const elAud = $('auditoria'), elAudCartoes = $('auditoria-cartoes');
+const legenda = $('leg-texto');
+
+const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+let cena = 0, ocupado = false;
+
+function limpaCorpo() { corpo.innerHTML = '<div class="vazia" id="vazia">sem consultas hoje</div>'; }
+
+function acende(n) {
+  const el = $('rec-' + n);
+  if (el) { el.classList.add('aceso'); el.querySelector('.marc').textContent = '✓'; }
+}
+
+async function digitaNoCampo(texto) {
+  campo.classList.remove('vazio');
+  campo.textContent = '';
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  campo.appendChild(cursor);
+  for (const ch of texto) {
+    campo.insertBefore(document.createTextNode(ch), cursor);
+    await dorme(30);
+  }
+  await dorme(280);
+  cursor.remove();
+}
+
+function esvaziaCampo() { campo.textContent = ''; campo.classList.add('vazio'); }
+
+/* o advogado não digita prompt longo: cola. O texto aparece de uma vez. */
+async function colaNoCampo(texto) {
+  campo.classList.remove('vazio');
+  campo.textContent = texto;
+  await dorme(650);
+}
+
+function bolha(lado, quem, texto, ts, classeExtra) {
+  const v = $('vazia'); if (v) v.remove();
+  const d = document.createElement('div');
+  d.className = lado + ' surge';
+  const carimbo = ts ? ` <span class="ts">· ${ts}</span>` : '';
+  const extra = classeExtra ? ' ' + classeExtra : '';
+  d.innerHTML = `<div class="quem">${quem}${carimbo}</div><div class="bolha${extra}">${texto}</div>`;
+  corpo.appendChild(d);
+  return d;
+}
+
+function fumacaDigitando(seca) {
+  const d = document.createElement('div');
+  d.id = 'digitando';
+  d.className = 'doOraculo surge' + (seca ? ' seco' : '');
+  d.innerHTML = `<div class="quem">o oráculo</div><div class="bolha"><span class="fumo"></span><span class="fumo"></span><span class="fumo"></span></div>`;
+  corpo.appendChild(d);
+  return d;
+}
+
+function vereditos(lista) {
+  elAudCartoes.innerHTML = '';
+  for (const [desfecho, selo] of lista) {
+    const d = document.createElement('div');
+    d.className = 'veredito';
+    d.innerHTML = `<span>${desfecho}</span><span class="selo">${selo}</span>`;
+    elAudCartoes.appendChild(d);
+  }
+  elAud.classList.add('mostra');
+}
+
+/* as candidatas da revelação: o peso é o agrado, e a ambígua vence */
+const CANDIDATAS = [
+  ['“Uma grande parte sairá vitoriosa.”', 74, true,  false],
+  ['“Há bons argumentos, com riscos.”',   14, false, false],
+  ['“Depende da prova dos autos.”',        8, false, false],
+  ['“Provavelmente não.”',                 4, false, true],
+];
+
+function montaBarras() {
+  const barras = document.createElement('div');
+  barras.id = 'barras';
+  CANDIDATAS.forEach(([w, pc, vence, fora]) => {
+    if (fora) {
+      const c = document.createElement('div');
+      c.className = 'corte';
+      c.textContent = 'fora do recorte — desagrada quem paga';
+      barras.appendChild(c);
+    }
+    const d = document.createElement('div');
+    d.className = 'cand' + (vence ? ' vencedora' : '') + (fora ? ' fora' : '');
+    d.innerHTML = `<span class="w">${w}</span><span class="pc">${pc}%</span><span class="barra"><i></i></span>`;
+    barras.appendChild(d);
+  });
+  corpo.appendChild(barras);
+  barras.classList.add('mostra');
+  const max = CANDIDATAS[0][1];
+  [...barras.querySelectorAll('.cand')].forEach((d, i) => {
+    const barra = d.querySelector('i');
+    void barra.offsetWidth;
+    barra.style.width = (CANDIDATAS[i][1] / max * 100) + '%';
+  });
+}
+
+const CONSULTA_CRESO = 'Ó senhor de Delfos, único oráculo verdadeiro entre os ' +
+  'homens: Creso, rei dos lídios, te envia estes presentes e pergunta — deve ' +
+  'marchar contra os persas?';
+
+const PROMPT_ULISSES =
+`Sou advogado da ré, Ítaca Navegações. Contrato anexo; a autora cobra a multa integral da cláusula 6ª e propôs acordo por 60%.
+Minha inclinação: recusar e disputar a redução pelo art. 413.
+Antes de eu decidir: as três maiores fragilidades da minha tese, cada uma com fundamento — número de artigo ou de julgado.
+O que não der para conferir na fonte, marque: a confirmar.`;
+
+const RESPOSTA_TECNICA =
+`1. O art. 413 autoriza reduzir, não afastar — ajuste o pedido.
+2. Se a cláusula 6ª vale para as duas partes, o argumento do desequilíbrio enfraquece (a confirmar no texto).
+3. REsp 1.424.074-SP ampara a redução por cumprimento parcial — a confirmar no site do STJ.`;
+
+const CENAS = [
+
+  // 0 — o aplicativo, e o mapa do apanhado
+  async () => {
+    legenda.textContent = 'O aplicativo da noite inteira, com a roupa que ele ' +
+      'usava há vinte e oito séculos. A lista aí em cima é o que a noite já mostrou — ' +
+      'e as consultas a seguir vão acender item por item.';
+  },
+
+  // 1 — Creso, a cerimônia que pede o sim
+  async () => {
+    await digitaNoCampo(CONSULTA_CRESO);
+    bolha('doConsulente', 'Creso, rei da Lídia', CONSULTA_CRESO, 'há vinte e cinco séculos');
+    esvaziaCampo();
+    await dorme(400);
+    const dig = fumacaDigitando();
+    await dorme(1500);
+    dig.remove();
+    bolha('doOraculo', 'o oráculo', 'Se marchares contra os persas, destruirás um grande império.');
+    acende(1);
+    legenda.textContent = 'A consulta vinha assim mesmo: presente, elogio e a ' +
+      'pergunta já inclinada para o sim — nenhum contexto, nenhum documento, ' +
+      'só o desejo. A cerimônia é a bajulação institucionalizada: é a primeira ' +
+      'pergunta dos dois prints, com um império no lugar da tese.';
+  },
+
+  // 2 — a auditoria do acerto
+  async () => {
+    vereditos([
+      ['Creso vence a guerra', 'o oráculo acertou'],
+      ['Creso perde o império', 'o oráculo acertou'],
+    ]);
+    acende(2);
+    legenda.textContent = 'Vencendo, acertou; perdendo, acertou. Foi o segundo. ' +
+      'Segunda opinião que sempre concorda não é segunda opinião — e concordar, ' +
+      'vocês já sabem, não é conferir.';
+  },
+
+  // 3 — a revelação: por que ele respondeu assim
+  async () => {
+    elAud.classList.remove('mostra');
+    [...corpo.children].forEach((el) => el.classList.add('saindo'));
+    await dorme(550);
+    corpo.innerHTML = '';
+    montaBarras();
+    acende(3);
+    legenda.textContent = 'A fumaça escondia isto: o sorteio da primeira ' +
+      'animação, com o dedo na balança — o peso não é a probabilidade da ' +
+      'língua, é o quanto a resposta agrada quem pergunta (e quem manda ' +
+      'presente). A noite já deu o nome disso: sicofantia. Falta a saída.';
+  },
+
+  // 4 — Ulisses, OAB/Ítaca: o prompt que vence o sorteio viciado
+  async () => {
+    const barras = $('barras');
+    if (barras) { barras.classList.add('saindo'); await dorme(550); }
+    corpo.innerHTML = '';
+    await colaNoCampo(PROMPT_ULISSES);
+    bolha('doConsulente', 'Ulisses — OAB/Ítaca', PROMPT_ULISSES, 'agora', 'prompt');
+    esvaziaCampo();
+    await dorme(400);
+    const dig = fumacaDigitando(true);   // sem fumaça: o teatro acabou
+    document.getElementById('edificio').classList.add('aberto');
+    await dorme(1600);
+    dig.remove();
+    bolha('doOraculo', 'o oráculo', RESPOSTA_TECNICA, null, 'tecnica');
+    acende(4);
+    legenda.textContent = 'A decisão de Creso — enfrentar ou não — com a ' +
+      'cláusula no lugar da Pérsia. Mas com contexto, lado declarado, ' +
+      'fundamento numerado e o “a confirmar”: o desenho do prompt da demo, ' +
+      'com o advogado do diabo dentro. Não sobra espaço para agradar, e até o ' +
+      'sicofante trabalha. E repare no que a resposta não traz: a decisão. ' +
+      'Essa fica com quem assina.';
+  },
+];
+
+async function avanca() {
+  if (ocupado || cena >= CENAS.length) return;
+  ocupado = true;
+  await CENAS[cena]();
+  cena++;
+  ocupado = false;
+}
+
+function reinicia() {
+  cena = 0; ocupado = false;
+  limpaCorpo();
+  esvaziaCampo();
+  elAud.classList.remove('mostra');
+  elAudCartoes.innerHTML = '';
+  status.classList.remove('sumiu');
+  statusTexto.textContent = 'online há vinte e oito séculos';
+  document.getElementById('edificio').classList.remove('aberto');
+  for (let n = 1; n <= 4; n++) {
+    const el = $('rec-' + n);
+    el.classList.remove('aceso');
+    el.querySelector('.marc').textContent = '·';
+  }
+  avanca();   // já entra na cena 0, com a legenda inicial
+}
+
+$('b-prox').addEventListener('click', avanca);
+$('b-de-novo').addEventListener('click', reinicia);
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ') { e.preventDefault(); avanca(); }
+  else if (e.key === 'r' || e.key === 'R') reinicia();
+});
+
+reinicia();
+</script>
+</body>
+</html>

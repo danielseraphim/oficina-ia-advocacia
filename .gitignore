@@ -1,0 +1,14 @@
+# o markdown montado pelo build, e as previas de bloco
+slides/.deck.md
+slides/previa-*.html
+slides/previa-*.png
+
+# dependencias do gera-qr.mjs e do embutir-fontes.mjs
+node_modules/
+package-lock.json
+package.json
+
+# lixo de sistema
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,1085 @@
+/* @theme oficina */
+
+/*
+  Tema da oficina — OAB Volta Redonda
+  ------------------------------------
+  Âncora visual: a página impressa jurídica. Frontispício de livro na capa,
+  cabeçalho de folha corrida, filetes finos, nota de rodapé de verdade,
+  rubrica em vermelho profundo (como os livros de leis antigos, que
+  imprimiam os títulos em vermelho e o texto em preto).
+
+  A monoespaçada aparece SÓ quando a máquina fala — prompt digitado ou
+  saída da IA. Nunca como decoração, etiqueta ou rodapé.
+
+  O que este tema evita de propósito (cacoetes de deck gerado por IA):
+  barra colorida à esquerda de bloco de texto, etiqueta uppercase em mono,
+  nota com "//" e separador "·", itálico serifado como floreio, todo
+  slide com o mesmo peso visual.
+
+  Para mexer: cores e tamanhos-base em :root, logo abaixo.
+*/
+
+/* As fontes vêm de fontes.css, que traz os arquivos embutidos em base64.
+   Nada aqui depende de internet — nem na hora de montar, nem na hora de
+   apresentar. O arquivo precisa estar na mesma pasta do HTML gerado. */
+@import url('fontes.css');
+
+:root {
+  /* As duas tintas de apoio foram ESCURECIDAS em 16/08, para projeção.
+     Medido em razão de contraste sobre o papel:
+
+       --tinta-2   era #4C4A45 (8,5:1)  ->  #3A3833 (11,4:1)
+       --apagado   era #8B877E (3,5:1)  ->  #6F6A60 (5,2:1)
+
+     O --apagado era o pior ponto do deck: 3,5:1 está abaixo do mínimo de
+     acessibilidade para texto corrido, e é justamente a cor da `.fonte-peca`
+     — a linha com número de processo, relator e data, que é o dado que a
+     noite inteira manda conferir e que a sala fotografa. Cor fraca ali é a
+     primeira coisa que projetor ruim apaga.
+
+     As duas continuam visivelmente mais claras que a tinta cheia, então a
+     hierarquia da página impressa não se perde — o que se perdeu foi a
+     margem de risco. */
+  --papel:    #FDFCF7;  /* papel de livro, quase branco */
+  --tinta:    #1B1B1F;  /* texto */
+  --tinta-2:  #3A3833;  /* texto secundário */
+  --apagado:  #6F6A60;  /* fólio, notas */
+  --rubrica:  #8E2B21;  /* vermelho de rubrica — títulos correntes, números */
+  --fio:      #D9D4C9;  /* filetes */
+  --exibido:  #F5F3EC;  /* fundo do bloco de máquina */
+
+  --fs-corpo: 30px;
+  --fs-h1:    64px;
+  --fs-h2:    42px;
+
+  /* --- controles de textura -------------------------------------
+     Dois efeitos convivem, e cada um tem um botão de volume:
+
+     --relevo  relevo seco no lado do papel (letterpress, selo de
+               cartório). Neumorfismo, mas com pretexto jurídico.
+     --vidro   painel translúcido no lado da máquina, sobre a luz
+               da tela caindo na página.
+
+     AVISO DE PROJEÇÃO: os dois dependem de diferenças sutis de
+     contraste, que é a primeira coisa que um projetor fraco come.
+     Se na segunda-feira a sala estiver clara ou o projetor ruim,
+     baixe --relevo para 0.4 e --vidro para 0.5 antes de rodar o
+     build. Nada mais precisa mudar.                              */
+  --relevo: 1;
+  --vidro:  1;
+
+  /* --- cores do cartaz de abertura ------------------------------
+     Amostradas da arte oficial e depois escurecidas para projeção:
+     azul, vermelho e amarelo saturados demais florescem no projetor
+     e comem o contraste do texto branco por cima.
+
+       cor da arte    aqui, para projeção
+       3427FD    ->   241AA8    azul
+       D21519    ->   A81015    vermelho
+       FEC303    ->   F0B800    amarelo
+
+     Se a projeção de segunda estiver boa e você quiser a cor cheia
+     da arte, é só trocar pelos valores da coluna da esquerda.      */
+  --cartaz-azul:     #241AA8;
+  --cartaz-vermelho: #A81015;
+  --cartaz-amarelo:  #F0B800;
+}
+
+section {
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: 'Spectral', Georgia, serif;
+  font-size: var(--fs-corpo);
+  line-height: 1.5;
+  padding: 60px 96px 72px 96px;
+  justify-content: flex-start;
+}
+
+/* fólio — número de página no canto externo do pé, como em livro.
+   position: absolute é necessário: por padrão o Marp trata o número
+   como item de flex, e aí ele sobe junto com o conteúdo. */
+section { position: relative; }
+section::after {
+  position: absolute;
+  font-family: 'Spectral', Georgia, serif;
+  font-size: 17px;
+  color: var(--apagado);
+  right: 48px;
+  bottom: 24px;
+  padding: 0;
+  text-align: right;
+}
+
+h1 {
+  font-weight: 800;
+  font-size: var(--fs-h1);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 30px 0;
+}
+
+h2 {
+  font-weight: 800;
+  font-size: var(--fs-h2);
+  line-height: 1.18;
+  margin: 0 0 26px 0;
+}
+
+/* Negrito NÃO é recurso de ênfase neste deck: grifar palavra dentro de uma
+   frase curta soa a slide de palestra motivacional, e a frase curta já traz
+   a ênfase sozinha. O peso 600 existe só para o caso raro de um termo que
+   precise se destacar numa lista longa — nunca para dar impacto. Título é
+   com h1/h2; afirmação forte é com .destaque, sozinha na página. */
+strong { font-weight: 600; }
+
+ul { font-size: 31px; line-height: 1.55; padding-left: 1.1em; }
+li { margin-bottom: 12px; }
+li::marker { color: var(--rubrica); }
+
+/* ------------------------------------------------------------------
+   COMPONENTES
+   ------------------------------------------------------------------ */
+
+/* .cabeca — título corrente no alto da página, como em livro:
+   versalete serifado espaçado, com filete embaixo, atravessando a página.
+   Substitui a antiga etiqueta mono. */
+.cabeca {
+  font-family: 'Spectral', Georgia, serif;
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--rubrica);
+  border-bottom: 1px solid var(--fio);
+  padding-bottom: 14px;
+  margin-bottom: 40px;
+}
+
+/* .rodape — nota de rodapé de verdade: filete curto e texto pequeno,
+   ancorada no pé da página (posição fixa, não flutua com o conteúdo).
+   O slide que tem rodapé reserva a faixa do pé, para o conteúdo não
+   descer por cima dela. */
+section:has(.rodape), section:has(.note) { padding-bottom: 158px; }
+
+.rodape, .note {
+  position: absolute;
+  left: 96px;
+  right: 150px;
+  bottom: 54px;
+  padding-top: 14px;
+  font-size: 21px;
+  line-height: 1.5;
+  color: var(--tinta);
+  font-weight: 500;
+}
+.rodape::before, .note::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 88px;
+  border-top: 1px solid var(--tinta);
+}
+
+/* ------------------------------------------------------------------
+   VOZ DA MÁQUINA — painel de vidro
+   Bloco de código cercado (```) no markdown.
+
+   O slide que contém fala de máquina leva <!-- _class: maquina -->,
+   que acende atrás da página um campo de luz fria — a luz do monitor
+   caindo no papel. O painel é translúcido e desfoca esse campo: é o
+   vidro tendo o que desfocar, em vez de transparência decorativa
+   sobre cor chapada.
+   ------------------------------------------------------------------ */
+
+/* A LUZ MORA NO PAINEL, NÃO NA PÁGINA (refeito em 16/08, 3ª versão).
+
+   Histórico curto, para ninguém regredir: a v1 pintava três manchas de cor
+   no fundo do slide (azul, vermelha, verde-água) — nos slides de duas
+   colunas, cada painel saía de uma cor, desmentindo o argumento "mesmo
+   modelo, só muda X". A v2 reduziu para uma mancha centrada no papel, e o
+   Daniel apontou o defeito que sobrou: continuava um borrão solto na página,
+   sem relação com coisa nenhuma. A intenção sempre foi outra — a luz é a
+   FUMAÇA ATRÁS DO VIDRO, o brilho do programa vazando por trás da interface.
+   Luz sem fonte é mancha; presa ao painel, é retroiluminação.
+
+   Como funciona agora: o fundo do slide de máquina é papel puro, e cada
+   painel carrega a própria luz em duas peças —
+
+   - um halo azul-frio no box-shadow, que vaza por FORA da borda (box-shadow
+     externo só pinta fora da caixa): é a luz escapando por trás do vidro,
+     mais forte embaixo (0 6px) porque luz de tela apoiada sobre a mesa
+     escorre para baixo;
+   - um esfriamento DENTRO do painel: o fundo translúcido deixou de ser o
+     tom do papel (que sobre papel desaparecia) e virou um branco frio
+     azulado — o interior do vidro é iluminado pela mesma fonte que o halo.
+
+   Dois painéis lado a lado = duas luzes idênticas, uma por painel: a
+   simetria dos slides de comparação está garantida por construção, não por
+   posicionamento de degradê. E onde não há painel, não há luz — a margem
+   fica limpa.
+
+   O backdrop-filter saiu: com papel liso atrás do painel, desfocar não
+   produzia nada visível — era CSS de faz de conta. */
+section.maquina { background: var(--papel); }
+
+/* O painel tem que LER COMO TELA, e ler de longe. Três decisões de 16/08,
+   depois do teste de projeção mental que o Daniel puxou:
+
+   1. O tom do vidro desceu. Antes era quase o branco do papel, e a diferença
+      entre página e tela ficava por conta de uma nuance que projetor fraco
+      come primeiro. Agora é um azul-acinzentado com degrau de valor visível:
+      sobrevive a sala clara, e diz "isto é uma tela" sem precisar de moldura
+      de navegador.
+   2. O reflexo entrou. A faixa clara diagonal no alto é luz varrendo a
+      superfície — é o que faz o olho ler vidro em vez de retângulo colorido.
+   3. Contraste do texto, que é o que importa de verdade: o prompt saiu da
+      tinta secundária para a TINTA CHEIA e do peso 400 para o 500 (peso real,
+      embutido em fontes.css — não é falso-negrito). Com o tom novo do painel,
+      a razão de contraste sai de ~8:1 para ~15:1.
+
+   Quanto mais fraco o projetor, mais OPACO o painel fica (o segundo termo do
+   calc): baixando --vidro, o reflexo e o halo se apagam e sobra um cartão
+   sólido de alto contraste, que é o que uma tela ruim consegue mostrar. */
+pre {
+  background-color: rgba(224, 234, 246, calc(0.78 + 0.16 * (1 - var(--vidro))));
+  background-image: linear-gradient(158deg,
+    rgba(255, 255, 255, calc(0.62 * var(--vidro))) 0%,
+    rgba(255, 255, 255, 0) 46%);
+  border: 1px solid rgba(255, 255, 255, calc(0.9 * var(--vidro)));
+  border-radius: 16px;
+  box-shadow:
+    0 6px 64px 14px rgba(74, 134, 201, calc(0.30 * var(--vidro))),
+    0 12px 30px rgba(27, 27, 31, calc(0.10 * var(--vidro))),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.95 * var(--vidro)));
+  /* O corpo é ditado pelo painel mais denso do deck — o prompt do slide 20,
+     com 12 linhas. Em 22/1,5 ele passava por cima da nota de rodapé. Em
+     21/1,45 sobra folga, e 21px ainda corrige o absurdo anterior: o prompt
+     era 20px, MENOR que a nota de rodapé, sendo que nesses slides é ele o
+     conteúdo que a sala precisa ler. O ganho grande de legibilidade não veio
+     do corpo, veio do peso 500 e da tinta cheia. Mexeu no prompt do 19?
+     Reconfira que o painel não encosta no rodapé. */
+  padding: 24px 32px;
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.45;
+}
+/* Nos slides de máquina o título corrente cede 10px para o painel — é o que
+   faz o prompt de 12 linhas do slide 20 caber sem encostar na nota. */
+section.maquina .cabeca { margin-bottom: 30px; }
+pre code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 500;
+  color: var(--tinta);
+  background: none;
+  padding: 0;
+  white-space: pre-wrap;
+}
+code:not(pre code) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: var(--tinta-2);
+  background: var(--exibido);
+  padding: 2px 8px;
+}
+
+/* .peca (e o antigo .legal) — trecho de documento jurídico: ementa,
+   cláusula, peça. Recuado e justificado, como transcrição impressa.
+   Sem itálico, sem barra colorida. */
+.peca, .legal {
+  font-size: 24px;
+  line-height: 1.55;
+  color: var(--tinta-2);
+  text-align: justify;
+  margin-left: 44px;
+  margin-right: 20px;
+}
+
+/* .sumula — item numerado; número em rubrica, serifado. */
+.sumula {
+  display: flex;
+  align-items: baseline;
+  gap: 30px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--fio);
+}
+.sumula:last-child { border-bottom: none; }
+.sumula .n {
+  font-family: 'Spectral', Georgia, serif;
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--rubrica);
+  min-width: 36px;
+  text-align: right;
+}
+.sumula .t { font-size: 30px; line-height: 1.34; }
+
+/* section.cartao — a página que também é a arte do cartão A6 (bloco 7).
+   Sete .sumula numa página só não cabem no corpo padrão: o item de 30px
+   com respiro de 15px soma 496px, e a página com rodapé oferece 502px
+   contando cabeça e título. Aqui o item encolhe o suficiente para caber
+   sem sair da leitura de longe — 28px continua maior que a nota de
+   rodapé do deck, que já é dimensionada para a última fileira.
+   Só o slide das sete frases usa esta classe; nada mais no deck muda. */
+section.cartao .cabeca { margin-bottom: 24px; }
+section.cartao h2 { margin-bottom: 16px; }
+section.cartao .sumula { padding: 6px 0; gap: 26px; }
+section.cartao .sumula .n { font-size: 24px; }
+section.cartao .sumula .t { font-size: 28px; }
+
+/* .indice — linhas com pontilhado de sumário de livro.
+   <div class="indice">
+     <div class="linha"><span class="item">Cole</span><span class="pontos"></span><span class="desc">os autos…</span></div>
+   </div> */
+.indice { display: flex; flex-direction: column; gap: 22px; margin-top: 10px; }
+.indice .linha {
+  display: grid;
+  grid-template-columns: 205px 52px 1fr;
+  align-items: baseline;
+}
+.indice .item {
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rubrica);
+}
+/* A margem é curta de propósito: a faixa do pontilhado tem 52px, e cada pixel
+   de margem tira dois do traço. Com 16px de cada lado sobravam 20px — seis
+   pontinhos, que leem como sujeira e não como pontilhado de sumário. Alargar a
+   faixa seria o outro caminho, mas ela come a largura da descrição e joga as
+   linhas longas do slide 8 para duas linhas. */
+.indice .pontos {
+  border-bottom: 2px dotted var(--fio);
+  margin: 0 6px;
+  transform: translateY(-7px);
+}
+.indice .desc { font-size: 29px; color: var(--tinta-2); }
+
+/* .indice.arejado — variante de respiro, para a página em que o índice é o
+   conteúdo inteiro: sem subtítulo em cima, quatro linhas curtas no corpo
+   padrão deixam um vazio de uns 200 px acima da nota de rodapé, e o vazio lê
+   como "falta alguma coisa aqui" em vez de margem. Abrindo o intervalo, as
+   mesmas quatro linhas ocupam a página como texto bem entrelinhado — que é o
+   que a página impressa faz quando tem pouco o que dizer. Só o slide 18 usa. */
+.indice.arejado { gap: 52px; margin-top: 26px; }
+
+/* .indice.largo — variante para mapa de poucas linhas com termo comprido:
+   a primeira coluna cabe TREINAMENTO sem comer o pontilhado, e o respiro
+   maior entre linhas evita três linhas empilhadas no alto da página. */
+.indice.largo { gap: 44px; margin-top: 34px; }
+.indice.largo .linha { grid-template-columns: 300px 52px 1fr; }
+
+/* section.meio — título corrente no alto, e o resto centrado na banda que
+   sobra entre o filete e a nota de rodapé. É o segundo remédio para o mesmo
+   problema da .arejado acima (poucas linhas deixando um vazio grande no pé),
+   e a escolha entre os dois é de conteúdo: quando as linhas SÃO a página,
+   abre-se o intervalo (.arejado); quando a página tem título e um bloco
+   compacto que precisa ficar junto — o mapa dos três nomes —, centra-se o
+   bloco inteiro. A .cabeca sai do fluxo, senão ela desce junto com o resto e
+   o título corrente deixa de ser título corrente. */
+section.meio { display: flex; flex-direction: column; justify-content: center; }
+/* O respiro de cima igual ao de baixo. Sem isso o centro do bloco cai acima
+   do centro óptico da página: a faixa reservada para a nota de rodapé (158 px,
+   lá em cima) encurta a caixa só embaixo, e o olho lê o resultado como
+   conteúdo empurrado para o alto — que é exatamente o defeito que esta classe
+   existe para corrigir. */
+section.meio:has(.rodape) { padding-top: 158px; }
+section.meio .cabeca {
+  position: absolute;
+  top: 60px;
+  left: 96px;
+  right: 96px;
+  margin-bottom: 0;
+}
+
+/* .duas — duas colunas com fio central, como página dupla. */
+.duas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.duas > div:first-child { padding-right: 44px; border-right: 1px solid var(--fio); }
+.duas > div:last-child  { padding-left: 44px; }
+.duas h3 {
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--apagado);
+  margin: 0 0 16px 0;
+}
+
+/* .peca.compacta — transcrição em coluna estreita (duas ementas lado a
+   lado). Sem o recuo do .peca solto, que ali só comeria largura. */
+/* Peso 500 (real, embutido) só na coluna estreita: 20px de serifada
+   justificada é o texto mais fino que a noite projeta, e é lido em voz alta
+   do telão nos slides 3, 4 e 11. O corpo não pode crescer sem quebrar as
+   duas colunas, então o ganho vem do peso. */
+/* Alinhada à esquerda, e é o contrário do que o resto das peças faz: em coluna
+   estreita a justificação abre buracos entre as palavras em caixa alta
+   ("FAZER  CUMULADA  COM  COBRANÇA  E"), e no projetor o buraco salta mais que
+   o alinhamento irregular da direita. */
+.peca.compacta { font-size: 20px; line-height: 1.44; font-weight: 500; margin-left: 0; margin-right: 0; text-align: left; }
+.peca + .peca { margin-top: 10px; }
+
+/* Orçamento vertical das páginas de ementa (3, 4 e 11), medido em 16/08.
+   A coluna mais alta é a da ementa falsa no slide da revelação: título
+   corrente + rótulo + a linha do julgado + três blocos de transcrição. Ela
+   já passava do pé da página ANTES desta rodada — a `.fonte-peca` maior
+   piorou, e o espaço foi devolvido em três cortes que não custam leitura
+   (entrelinha da transcrição, respiro entre blocos, e a margem do título
+   corrente aqui embaixo). Quem acrescentar um parágrafo de ementa a essas
+   páginas precisa refazer a conta: o fólio fica a 24px do pé, e é nele que
+   a coluna esbarra primeiro. */
+section:has(.peca.compacta) .cabeca { margin-bottom: 28px; }
+
+/* .peca.grande — transcrição curta que ocupa a página sozinha e é lida em voz
+   alta (a do acórdão, no bloco 4). No corpo normal ela ficaria pequena demais
+   para a última fileira e deixaria metade da página vazia.
+   Alinhada à esquerda de propósito, contra o justify herdado da .peca: em
+   medida larga, justificar sem hífen abre buracos entre as palavras (17/08,
+   visível no slide 12), e hyphens:auto não é remédio — o Chromium não traz
+   dicionário de divisão silábica, e o navegador do dia é incógnita. A margem
+   direita irregular é o preço, e em citação projetada ninguém a lê como erro. */
+.peca.grande { font-size: 30px; line-height: 1.5; text-align: left; }
+.peca.grande + .peca.grande { margin-top: 30px; }
+
+/* .fonte-peca — a linha que identifica o julgado: número, relator, órgão,
+   data.
+
+   ELA É O CONTEÚDO, NÃO A LEGENDA — e o tema errava nisso até 16/08. Estava
+   desenhada como crédito de imagem: 18px, cinza claro, o texto mais fraco da
+   página. Mas a tese da noite é que o texto da ementa não tem sinal de
+   falsidade nenhum (é prosa plausível, e a autópsia do bloco 4 existe para
+   dizer isso) — o que se confere é justamente esta linha. Projetar em cinza
+   pequeno o único dado falsificável do slide era o tema contradizendo a fala.
+
+   Agora ela é a informação dominante da coluna: 22px, peso 600, tinta cheia.
+   A transcrição embaixo continua em 20px de tinta secundária, e a inversão é
+   proposital — o que a sala tem que conseguir ler da última fileira é o
+   número, não o latinório.
+
+   O riscado da revelação fica mais forte junto, o que é bom: é o gesto de
+   "este não existe" aplicado exatamente sobre o dado que se consulta. */
+.fonte-peca {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--tinta);
+  margin-bottom: 12px;
+}
+
+/* marcação de conferência (slide da revelação) */
+.duas h3.rubrica { color: var(--rubrica); }
+.fonte-peca.riscada { text-decoration: line-through; text-decoration-color: var(--rubrica); }
+
+/* .gravura — ilustração de página inteira, no registro da estampa de livro.
+   Existe num slide só: o espelho da sicofantia, no bloco 4.
+
+   O gênero é a SILHUETA-RETRATO do séc. XIX — busto de perfil, chapado, sem
+   rosto desenhado, tradicionalmente emoldurado em oval. Foi escolhido depois
+   que a primeira versão (figuras de corpo inteiro, espelho com pé e chão)
+   foi reprovada: corpo inteiro em silhueta exige desenho de mão que este
+   deck não tem, e o busto de perfil resolve porque é cabeça, pescoço e
+   ombro — e porque a moldura oval do espelho JÁ É a moldura do gênero.
+
+   Regras do registro, para quem criar outra: nada de cor além da rubrica
+   única; nenhuma luz (a regra do tema — luz sai do elemento que brilha, e
+   papel não brilha); legenda embaixo, centrada, como legenda de estampa,
+   nunca em itálico; e sem nota de rodapé, que competiria com a legenda.
+   As cores vêm daqui, não do SVG: os elementos levam classe e o tema pinta. */
+.gravura { display: flex; flex-direction: column; align-items: center; gap: 26px; }
+.gravura svg { width: 840px; height: auto; display: block; }
+.gravura .legenda { font-size: 24px; color: var(--tinta-2); }
+.gravura .g-fig { fill: var(--tinta); }
+.gravura .g-reflexo { fill: var(--tinta-2); }
+/* A coroa é OURO, não rubrica (17/08, crítica dele: em vermelho lia como
+   crista de galo). O tom é o --cartaz-amarelo, que já existe na paleta —
+   amostrado da arte do evento e escurecido para projeção. É o único uso de
+   ouro no deck, e é semântico: coroa dourada, não acento decorativo. */
+.gravura .g-coroa { fill: var(--cartaz-amarelo); }
+/* A luz do vidro segue a regra do tema — luz sai do elemento que brilha.
+   Aqui o espelho É a tela: o vidro acende em azul frio, mais claro no
+   centro, com a borda puxando o azul do antigo campo de luz dos slides de
+   máquina (74,134,201). Obedece ao botão --vidro: projetor fraco, menos luz. */
+/* Os mesmos stops servem à gravura (o vidro do espelho) e ao diagrama do
+   bloco 5 (a tela do computador): é UMA luz de interface, a mesma nos dois
+   slides — se mudar aqui, muda coerente. */
+.gravura .g-luz-centro, .diagrama .g-luz-centro { stop-color: #F7FAFD; stop-opacity: calc(0.75 * var(--vidro)); }
+.gravura .g-luz-meio, .diagrama .g-luz-meio { stop-color: #E5EEF7; stop-opacity: calc(0.5 * var(--vidro)); }
+.gravura .g-luz-borda, .diagrama .g-luz-borda { stop-color: #4A86C9; stop-opacity: calc(0.22 * var(--vidro)); }
+.gravura .g-papel { fill: var(--papel); stroke: var(--tinta); stroke-width: 2; }
+.gravura .g-linha-papel { stroke: var(--apagado); stroke-width: 1.5; fill: none; }
+.gravura .g-moldura { fill: none; stroke: var(--tinta); stroke-width: 3.5; }
+.gravura .g-traco { fill: none; stroke: var(--tinta); stroke-width: 2.5; stroke-linecap: round; }
+.gravura .g-fio-fino { fill: none; stroke: var(--apagado); stroke-width: 1.5; }
+
+/* .margem — nota de margem, ao lado da transcrição: o que um leitor anotaria
+   no branco da página ao conferir uma peça. Rótulo em versalete de rubrica,
+   comentário embaixo, sem caixa e sem seta. Vive dentro da segunda coluna de
+   .duas, com a transcrição na primeira.
+   <div class="margem">
+     <div class="nota"><div class="rotulo">O número</div><div class="texto">…</div></div>
+   </div> */
+.margem { display: flex; flex-direction: column; gap: 26px; }
+.margem .rotulo {
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rubrica);
+  margin-bottom: 6px;
+}
+.margem .texto { font-size: 22px; line-height: 1.4; color: var(--tinta-2); }
+
+/* .diagrama — figura de linha, no registro da gravura técnica de livro:
+   traço fino, quase nada preenchido, rótulo em versalete. Existe num slide só
+   (o 17), e a razão é de conteúdo, não de enfeite: "os arquivos vão para o
+   computador de outra pessoa" é a única afirmação central da noite que nenhuma
+   animação mostrou, e o slide fica minutos na tela sustentando o bloco.
+
+   Redesenhado em 17/08 (duas rodadas) para ler a um advogado, não a alguém
+   de TI: um notebook de TELA ACESA em azul discreto (a mesma luz de
+   interface do espelho do slide 13 — os stops são compartilhados, ver
+   g-luz-*), folhas de papel com orelha viajando na seta, e o destino é um
+   DATACENTER — três racks com leds, dentro de uma NUVEM TRACEJADA. A nuvem
+   substituiu o cercado retangular (lia como contêiner) e o rótulo "de outra
+   pessoa" (deixava imaginar alguém lendo a petição do outro lado): o rótulo
+   é "num datacenter / um galpão de computadores". A classe .folha é a única
+   exceção ao "nada preenchido": fundo de papel, para as folhas esconderem a
+   seta que passa atrás.
+
+   A CONVENÇÃO DO DESENHO É A TESE DO SLIDE, e é ela que não pode quebrar se
+   alguém mexer: linha cheia é o que existe de fato (a sua máquina, o
+   documento, o servidor de lá); linha tracejada é o que é só promessa (o
+   termo de uso). O cercado em volta do servidor é tracejado porque não é
+   parede — é contrato.
+
+   As medidas do desenho vivem no viewBox do próprio SVG, no slide. Aqui só
+   ficam traço, cor e tipo. */
+.diagrama { margin-top: 44px; }
+.diagrama svg { display: block; width: 100%; height: auto; }
+.diagrama .traco { fill: none; stroke: var(--tinta-2); stroke-width: 1.75; }
+.diagrama .fio   { fill: none; stroke: var(--fio);     stroke-width: 1.75; }
+.diagrama .folha { fill: var(--papel); stroke: var(--tinta-2); stroke-width: 1.75; }
+/* .led — as luzinhas de status dos racks do datacenter: o mesmo azul da luz
+   de interface, obedecendo ao botão --vidro como todo brilho do deck. */
+.diagrama .led { fill: #4A86C9; stroke: none; opacity: calc(0.85 * var(--vidro)); }
+.diagrama .ponta { fill: var(--tinta-2); stroke: none; }
+.diagrama .chamada { fill: none; stroke: var(--rubrica); stroke-width: 1.5; }
+.diagrama .promessa {
+  fill: none;
+  stroke: var(--rubrica);
+  stroke-width: 1.75;
+  stroke-dasharray: 9 8;
+}
+.diagrama text {
+  font-family: 'Spectral', Georgia, serif;
+  font-size: 19px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: var(--apagado);
+}
+.diagrama text.marcada { fill: var(--rubrica); }
+
+/* ------------------------------------------------------------------
+   RELEVO SECO — o lado do papel
+   Neumorfismo com pretexto: é o relevo cego da tipografia impressa e
+   do selo de cartório, não um botão de aplicativo. Por isso vive só
+   em número, filete e ornamento — nunca em texto corrido, que
+   precisa de contraste limpo para ser lido de longe.
+   ------------------------------------------------------------------ */
+
+/* número da súmula: prensado no papel */
+.sumula .n {
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, calc(0.95 * var(--relevo))),
+    0 -1px 1px rgba(27, 27, 31, calc(0.22 * var(--relevo)));
+}
+
+/* .selo — ornamento circular em relevo, para a capa.
+   Decorativo de propósito: não imita marca de instituição. */
+.selo {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: var(--papel);
+  box-shadow:
+    calc(7px * var(--relevo)) calc(7px * var(--relevo)) calc(16px * var(--relevo)) rgba(27, 27, 31, 0.10),
+    calc(-7px * var(--relevo)) calc(-7px * var(--relevo)) calc(16px * var(--relevo)) rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px var(--fio);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+.selo::after {
+  content: '';
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 1px solid var(--fio);
+  box-shadow: inset 0 1px 2px rgba(27, 27, 31, calc(0.10 * var(--relevo)));
+}
+
+/* .cartao — superfície levemente elevada, para agrupar sem caixa.
+   Mesmo papel do fundo; o que separa é a luz, não a borda. */
+.cartao {
+  background: var(--papel);
+  border-radius: 18px;
+  padding: 30px 34px;
+  box-shadow:
+    calc(9px * var(--relevo)) calc(9px * var(--relevo)) calc(22px * var(--relevo)) rgba(27, 27, 31, 0.08),
+    calc(-9px * var(--relevo)) calc(-9px * var(--relevo)) calc(22px * var(--relevo)) rgba(255, 255, 255, 0.96);
+}
+
+/* ------------------------------------------------------------------
+   LAYOUTS  —  <!-- _class: cover -->  etc.
+   ------------------------------------------------------------------ */
+
+/* capa como frontispício de livro: tudo centrado, filete duplo
+   (grosso + fino) acima e abaixo do título */
+section.cover {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 60px 120px;
+}
+section.cover .instituicao {
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+  margin-bottom: 46px;
+}
+section.cover .filete {
+  width: 240px;
+  border-top: 3px solid var(--tinta);
+  border-bottom: 1px solid var(--tinta);
+  height: 5px;
+  margin: 0 auto;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, calc(0.9 * var(--relevo))));
+}
+section.cover h1 {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, calc(0.8 * var(--relevo)));
+}
+section.cover h1 {
+  font-size: 72px;
+  line-height: 1.12;
+  margin: 42px 0;
+  max-width: 17em;
+}
+section.cover .autor {
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta);
+  margin-top: 46px;
+}
+section.cover .data {
+  font-size: 20px;
+  color: var(--apagado);
+  margin-top: 10px;
+}
+section.cover::after { content: ''; }
+
+/* .logos — a chancela institucional no pé da capa, extraída da arte
+   oficial do evento. No frontispício de livro é onde fica a marca de
+   quem publica; aqui é a mesma função. O fundo da imagem já foi
+   trocado pelo tom do papel, então ela assenta sem caixa branca. */
+section.cover .logos {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 54px;
+  text-align: center;
+}
+section.cover .logos img {
+  width: 400px;
+  height: auto;
+  display: inline-block;
+}
+
+/* ------------------------------------------------------------------
+   CARTAZ — o slide de abertura, que reproduz a arte oficial do evento
+   adaptada de retrato (4:5) para paisagem (16:9). Quem chegou pela
+   divulgação reconhece a peça na tela.
+
+   Cores em --cartaz-azul, --cartaz-vermelho e --cartaz-amarelo, lá em
+   :root — amostradas da arte e escurecidas para projeção. Tipografia
+   geométrica (Poppins) no lugar da
+   original, que não é distribuída publicamente.
+
+   É o único slide do deck fora do tema de página impressa — de
+   propósito: ele é o cartaz, não o livro.
+   ------------------------------------------------------------------ */
+
+section.cartaz {
+  padding: 0;
+  background: #FFFFFF;
+  font-family: 'Poppins', 'Inter', sans-serif;
+  overflow: hidden;
+  display: block;
+}
+section.cartaz::after { content: ''; }
+
+section.cartaz .corpo {
+  display: grid;
+  grid-template-columns: 56% 44%;
+  height: 556px;   /* 556 + 96 (local) + 68 (rodapé) = 720 */
+}
+
+section.cartaz .esquerda {
+  background: var(--cartaz-azul);
+  padding: 52px 44px 40px 62px;
+  position: relative;
+}
+section.cartaz .chamada {
+  display: inline-block;
+  background: var(--cartaz-amarelo);
+  color: #16181D;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 7px 15px;
+  margin-bottom: 30px;
+}
+section.cartaz h1 {
+  color: #FFFFFF;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 46px;
+  line-height: 1.14;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  margin: 0;
+  text-shadow: none;
+  max-width: 11.5em;
+}
+/* O bloco da data fica no pé do campo azul — na arte original ele
+   está no alto à direita, mas em paisagem essa posição colide com o
+   título. Aqui ele ancora o vazio que sobra embaixo. */
+section.cartaz .data {
+  position: absolute;
+  left: 62px;
+  bottom: 46px;
+  background: var(--cartaz-vermelho);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 22px;
+}
+section.cartaz .data .dia {
+  font-weight: 800;
+  font-size: 56px;
+  line-height: 0.9;
+}
+section.cartaz .data .mes {
+  font-weight: 800;
+  font-size: 25px;
+  line-height: 1.05;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+section.cartaz .data .hora {
+  background: #FFFFFF;
+  color: var(--cartaz-vermelho);
+  font-weight: 700;
+  font-size: 24px;
+  padding: 7px 13px;
+  margin-left: 6px;
+}
+
+section.cartaz .direita {
+  padding: 40px 56px 0 46px;
+  text-align: center;
+  position: relative;
+}
+
+/* .pontos — a grade de bolinhas vermelhas da arte original.
+
+   A geometria não é estimada: as bolinhas foram medidas uma a uma na
+   arte (detecção de componentes conectados). Grade de 5×5, espaçamento
+   26 px, bolinha de 13 px de diâmetro, primeira em (330,556) — contra
+   um círculo de retrato centrado em (531,487) com raio 190.
+
+   Tudo aqui está reduzido por 116/190 = 0,6105, que é a razão entre o
+   raio do retrato no slide (232 px de largura) e o da arte. Mudou o
+   tamanho do retrato? Refaça a conta, ou a grade desencaixa.
+
+   Fica ATRÁS do retrato, como na arte: o ombro cobre as bolinhas da
+   direita nas fileiras de cima, e a borda do círculo encosta na última
+   bolinha da quinta fileira sem cobri-la. Dois critérios de conferência:
+   se as bolinhas aparecerem todas, o z-index quebrou; se a última da
+   quinta fileira sumir, a posição está errada.
+
+   Desenhada por máscara SVG (não por radial-gradient, que serrilha em
+   bolinha pequena) — assim a bolinha sai redonda de verdade e a cor
+   continua vindo da variável do cartaz. */
+section.cartaz .pontos {
+  position: absolute;
+  left: 146px;
+  top: 190px;
+  z-index: 0;
+  width: 79px;   /* 130 × 0,6105 — a grade inteira */
+  height: 79px;
+  background-color: var(--cartaz-vermelho);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cdefs%3E%3Cpattern id='p' width='26' height='26' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='13' cy='13' r='6.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='130' height='130' fill='url(%23p)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cdefs%3E%3Cpattern id='p' width='26' height='26' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='13' cy='13' r='6.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='130' height='130' fill='url(%23p)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+section.cartaz .direita img {
+  width: 232px;
+  height: auto;
+  display: inline-block;
+  position: relative;
+  z-index: 1;              /* o retrato cobre parte da grade de pontos */
+}
+section.cartaz .nome {
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.2;
+  color: #16181D;
+  text-transform: uppercase;
+  margin-top: 18px;
+}
+section.cartaz .bio {
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.5;
+  text-wrap: balance;
+  color: #3A3A3A;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-top: 12px;
+}
+
+section.cartaz .local {
+  box-sizing: border-box;
+  background: var(--cartaz-vermelho);
+  color: #FFFFFF;
+  padding: 15px 62px;
+  height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+section.cartaz .local .titulo {
+  font-weight: 800;
+  font-size: 29px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+section.cartaz .local .endereco {
+  font-weight: 400;
+  font-size: 16px;
+  margin-top: 5px;
+}
+
+section.cartaz .rodape-cartaz {
+  box-sizing: border-box;
+  height: 68px;
+  padding: 0 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+section.cartaz .rodape-cartaz .nota {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--cartaz-vermelho);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  max-width: 22em;
+  line-height: 1.35;
+}
+section.cartaz .rodape-cartaz img {
+  width: 296px;
+  height: auto;
+}
+
+/* divisória de bloco — número grande de capítulo em rubrica */
+section.divider { justify-content: center; align-items: center; text-align: center; }
+section.divider .capitulo {
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--rubrica);
+  margin-bottom: 18px;
+}
+section.divider h1 { font-size: 66px; margin: 0; }
+
+/* section.retrato — a fotografia sangra na margem esquerda e ocupa a altura
+   inteira da página; o texto fica na coluna de papel à direita. Sem moldura
+   de propósito: a foto não é um objeto colado no slide, é a página abrindo
+   na imagem. A borda interna dissolve em papel e o fundo recebe a luz quente
+   da própria foto — é a mesma ideia do slide de máquina (a luz da tela
+   caindo no papel), com a fotografia no lugar do monitor. */
+/* Fundo de papel puro, pela mesma razão do slide de máquina: luz pintada no
+   fundo é mancha, porque não vem de lugar nenhum. Aqui a fonte é óbvia e
+   está em cena — a fotografia. A luz dela sai como box-shadow da própria
+   `.foto`, logo abaixo. */
+section.retrato { padding-left: 600px; background: var(--papel); }
+section.retrato .foto {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 540px;
+  overflow: hidden;
+}
+section.retrato .foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Fio de encontro, no lugar de esmaecimento: é o mesmo filete que separa as
+   colunas de .duas. Assim a borda reta lê como divisão de página dupla — uma
+   escolha — em vez de corte acidental. Máscara degradê foi tentada e
+   descartada: numa foto de fundo escuro contra papel claro, qualquer faixa
+   curta vira linha visível e qualquer faixa longa apaga quem está na beira. */
+section.retrato .foto { border-right: 1px solid var(--fio); }
+/* A luz quente que a foto joga na página, ancorada na foto e não no fundo —
+   mesma lógica do painel de vidro (16/08). O deslocamento em X e o espalho
+   negativo empurram o brilho todo para a direita: à esquerda ele fica por
+   baixo da própria imagem, que é opaca, então não existe halo em volta da
+   foto — existe derrame para dentro do papel, que é o que uma superfície
+   iluminada faz com a página ao lado. O filete de encontro continua sendo a
+   borda: o brilho começa depois dele.
+   O tom sai do próprio conteúdo da imagem (o painel vermelho do fundo). */
+section.retrato .foto {
+  box-shadow: 140px 0 220px -50px rgba(199, 91, 48, calc(0.34 * var(--vidro)));
+}
+section.retrato .rodape { left: 600px; }
+/* O texto é ancorado entre o filete do título corrente e a faixa da nota de
+   rodapé, e centrado nessa banda: sem isso ele encosta no título e deixa um
+   vazio grande embaixo, que lê como erro de diagramação e não como respiro. */
+section.retrato .fala {
+  position: absolute;
+  left: 600px;
+  right: 96px;
+  top: 150px;
+  bottom: 172px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+section.retrato .fala p {
+  margin: 0 0 18px 0;
+  font-size: 33px;
+  line-height: 1.3;
+}
+section.retrato .fala p:last-child { margin-bottom: 0; }
+
+/* section.animacao — a página inteira cedida a uma animação em HTML, que
+   roda num iframe. O arquivo (animacao-llm.html) é autônomo: abre sozinho no
+   navegador, o que também é o plano B se o iframe der problema no dia.
+   Sem padding e sem fólio — a moldura é a própria página, e a animação já
+   traz o título corrente e o campo de luz do slide de máquina. */
+section.animacao { padding: 0; overflow: hidden; }
+section.animacao iframe { display: block; width: 100%; height: 100%; border: 0; }
+/* display:none, não content:'': a regra de paginação do Marp é mais
+   específica que a nossa e reescreve o content — o fólio reaparecia por
+   cima do iframe, em cima da nota da animação. */
+section.animacao::after { display: none; }
+
+/* afirmação sozinha, centrada verticalmente.
+   O display:flex precisa estar aqui: a <section> do Marp é bloco por
+   padrão, e sem ele o justify-content não tem efeito nenhum — a frase
+   encosta no topo da página. */
+section.center { display: flex; flex-direction: column; justify-content: center; }
+.destaque {
+  font-size: 50px;
+  line-height: 1.3;
+  font-weight: 400;
+  max-width: 19em;
+}
+.destaque strong { font-weight: 600; }
+
+/* ------------------------------------------------------------------
+   CONTATO — o último slide: dois códigos de QR e nada mais.
+
+   Regras que o formato impõe, e que não são estéticas:
+   · área de silêncio. Código de QR precisa de margem livre em volta
+     (quatro módulos) ou o leitor não acha as bordas. Os SVG são
+     gerados com margin:0, então a margem é o padding do .quadro —
+     mexer nele quebra a leitura, não a diagramação.
+   · tamanho. A sala é grande e o código é lido de longe, de celular
+     na mão. 300px num slide de 1280 é o mínimo honesto para a última
+     fileira; por isso a página não comporta mais nada.
+   · contraste. Tinta cheia sobre papel, sem transparência e sem
+     textura atrás — os dois SVG têm fundo transparente de propósito,
+     para assentarem no papel do quadro.
+   ------------------------------------------------------------------ */
+section.contato {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* reserva a faixa dos logos, que são absolutos: sem isso a assinatura
+     centralizada cai em cima da chancela institucional */
+  padding-bottom: 168px;
+}
+section.contato .codigos {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 110px;
+}
+.codigo { text-align: center; }
+.codigo .quadro {
+  /* inline-block para o quadro abraçar o código: como bloco, ele esticava
+     até a largura do endereço escrito embaixo, e o do repositório (que tem
+     a linha mais longa) ficava com sobra de papel à direita */
+  display: inline-block;
+  background: var(--papel);
+  border-radius: 18px;
+  padding: 26px;                /* a área de silêncio — ver acima */
+  box-shadow:
+    calc(9px * var(--relevo)) calc(9px * var(--relevo)) calc(22px * var(--relevo)) rgba(27, 27, 31, 0.08),
+    calc(-9px * var(--relevo)) calc(-9px * var(--relevo)) calc(22px * var(--relevo)) rgba(255, 255, 255, 0.96);
+}
+.codigo .quadro img {
+  display: block;
+  width: 300px;
+  height: 300px;
+}
+.codigo .rotulo {
+  margin-top: 22px;
+  font-size: 27px;
+  color: var(--tinta);
+}
+.codigo .endereco {
+  margin-top: 6px;
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 17px;
+  color: var(--apagado);
+  letter-spacing: 0.01em;
+}
+section.contato .assinatura {
+  margin-top: 38px;
+  text-align: center;
+  font-size: 20px;
+  letter-spacing: 0.16em;
+  color: var(--tinta-2);
+}
+section.contato .logos {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 46px;
+  text-align: center;
+}
+section.contato .logos img {
+  width: 300px;
+  height: auto;
+  display: inline-block;
+}

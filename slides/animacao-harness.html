@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>O que acontece depois que você aperta enter</title>
+<!--
+  Animação 2 da oficina — modelo e harness, encenados na interface que o
+  advogado realmente usa: uma conversa de chatbot.
+  Autocontida e offline, como a animacao-llm.html.
+
+  Teclas:  espaço = próxima etapa (são 11) · A = automático · R = reinicia
+  (as teclas só respondem depois de um clique dentro da animação; os
+   botões funcionam sempre — conduza por eles)
+
+  DUAS SESSÕES, por decisão do Daniel:
+  - Conversa 1: pergunta simples, sem pedido de verificação. O modelo
+    responde certo DO TREINAMENTO (matéria de manual, art. 413), sem
+    nenhuma ferramenta acender — e com a ressalva típica de "confirme".
+  - Conversa nova: o contexto ZERA na tela (ele não lembra da anterior).
+  - Conversa 2: o advogado manda conferir — Gmail, pasta, internet — e o
+    ciclo ferramenta → contexto roda inteiro. No fim, o modelo grava a
+    minuta como arquivo (.docx) e a janela do documento aparece.
+
+  OUTRAS DECISÕES DE CONTEÚDO, para o roteiro não desmentir a tela:
+  - O GATILHO É O PROMPT, nas duas conversas. Nada acontece antes do enter.
+  - Gmail e Google com o logotipo de verdade, desenhado em SVG aqui mesmo
+    (16/08, decisão do Daniel, revendo a escolha anterior de usar só o nome).
+    O motivo é de reconhecimento: a coluna da esquerda tem que parecer com a
+    tela que o advogado abre, e nos blocos 3 e 8 o telão mostra o aplicativo
+    real com as marcas na cara da sala — esconder logotipo aqui não protegia
+    nada. Uso nominativo, em palestra gratuita e sem conotação negativa.
+    As outras duas ferramentas (pasta e você) levam glifo de traço na tinta
+    da própria animação: sem eles, dois cartões com ícone e dois sem parecem
+    erro de montagem, e não escolha.
+  - O raciocínio aparece compactado, como nos aplicativos.
+  - A coluna da direita chama CONTEXTO; o 1º item é o próprio pedido.
+  - Nada acessa internet de verdade. O que é fiel é o ciclo.
+
+  O caso é o mesmo da animação 1 (multa contratual, art. 413 do CC) e o
+  julgado é o REsp 1.424.074-SP — o verdadeiro do bloco 1, com o desfecho
+  conferido (multa fixada em 20%).
+-->
+<style>
+  @import url('fontes.css');
+
+  :root {
+    --papel:   #FDFCF7;
+    --tinta:   #1B1B1F;
+    /* Escurecidas em 16/08 junto com o tema, pelo mesmo motivo: projeção.
+       Contraste sobre o papel de 8,5:1 para 11,4:1 e de 3,5:1 para 5,2:1 —
+       o segundo estava abaixo do mínimo para texto corrido. */
+    --tinta-2: #3A3833;
+    --apagado: #6F6A60;
+    --rubrica: #8E2B21;
+    --fio:     #D9D4C9;
+    --exibido: #F5F3EC;
+    --azul:    #2E5F96;
+    --vidro:   1;
+  }
+
+  html { font-size: clamp(11px, 2vh, 21px); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  /* Papel puro. As três manchas de luz que ficavam aqui saíram em 16/08, pela
+     mesma razão do tema: luz pintada no fundo não vem de lugar nenhum e lê
+     como mancha. A luz agora mora na janela do aplicativo, que é quem brilha
+     — e aqui isso é ainda mais literal, porque o painel É a tela. */
+  body {
+    position: relative;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: 'Spectral', Georgia, serif;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    row-gap: 0.9rem;
+    padding: 1.5rem 2.6rem 1.1rem;
+  }
+
+  .cabeca {
+    font-weight: 600; font-size: 0.92rem;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--rubrica);
+    border-bottom: 1px solid var(--fio);
+    padding-bottom: 0.55rem;
+  }
+
+  #meio {
+    display: grid;
+    grid-template-columns: 13.5rem minmax(0, 1fr) 14.5rem;
+    column-gap: 1.4rem;
+    min-height: 0;
+  }
+  .coluna { display: flex; flex-direction: column; gap: 0.55rem; min-height: 0; }
+  .rotulo {
+    font-size: 0.76rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--apagado); line-height: 1.35;
+  }
+  .rotulo b { font-weight: 600; color: var(--tinta-2); letter-spacing: 0.15em; }
+  /* .rotulo.fora — o cartão de baixo não está sob o rótulo "ferramentas".
+     Decisão do Daniel em 16/08: a tela não chama o advogado de ferramenta.
+     O filete curto é o que separa o harness de quem responde por ele. */
+  .rotulo.fora {
+    margin-top: 0.15rem; padding-top: 0.5rem;
+    border-top: 1px solid var(--fio);
+    color: var(--rubrica);
+  }
+
+  /* ---------- coluna 1: as ferramentas (o harness) ---------- */
+  .ferramenta {
+    border: 1px solid var(--fio);
+    border-radius: 0.6rem;
+    background: rgba(253,252,247,0.5);
+    padding: 0.5rem 0.7rem;
+    transition: border-color .3s, background .3s, box-shadow .3s;
+  }
+  .ferramenta .titulo { display: flex; align-items: center; gap: 0.5rem; }
+  .ferramenta .icone { flex: 0 0 auto; width: 1.35rem; color: var(--tinta-2); }
+  .ferramenta .icone svg { display: block; width: 100%; height: auto; }
+  .ferramenta.acesa .icone { color: var(--azul); }
+  .ferramenta.humano.acesa .icone { color: var(--rubrica); }
+  .ferramenta .nome { font-size: 0.95rem; font-weight: 600; line-height: 1.2; }
+  .ferramenta .oque { font-size: 0.78rem; color: var(--apagado); line-height: 1.3; margin-top: 0.1rem; }
+  .ferramenta.acesa {
+    border-color: var(--azul);
+    background: rgba(46,95,150,0.08);
+    box-shadow: 0 0 0 2px rgba(46,95,150,0.22);
+  }
+  .ferramenta.acesa .oque { color: var(--azul); }
+  .ferramenta.humano { border-style: dashed; }
+  .ferramenta.humano.acesa { border-color: var(--rubrica); background: rgba(142,43,33,0.07); box-shadow: 0 0 0 2px rgba(142,43,33,0.20); }
+  .ferramenta.humano.acesa .oque { color: var(--rubrica); }
+
+  /* ---------- coluna 2: a conversa ---------- */
+  /* A janela do aplicativo, com o mesmo vidro do <pre> do tema (16/08): tom
+     azul-acinzentado com degrau de valor visível, reflexo diagonal no alto e
+     halo frio vazando por trás da borda — retroiluminação. Sem saturate(),
+     que acendia a cor dentro do painel em vez de dessaturá-la. Medidas em
+     rem, para servir o slide de 1280x720 e a janela cheia do plano B. */
+  #chat {
+    display: flex; flex-direction: column; min-height: 0;
+    background-color: rgba(224, 234, 246, calc(0.78 + 0.16 * (1 - var(--vidro))));
+    background-image: linear-gradient(158deg,
+      rgba(255,255,255, calc(0.62 * var(--vidro))) 0%,
+      rgba(255,255,255, 0) 46%);
+    border: 1px solid rgba(255, 255, 255, calc(0.9 * var(--vidro)));
+    border-radius: 0.85rem;
+    box-shadow:
+      0 0.4rem 4.4rem 1rem rgba(74,134,201, calc(0.30 * var(--vidro))),
+      0 0.5rem 1.7rem rgba(27,27,31, calc(0.10 * var(--vidro))),
+      inset 0 1px 0 rgba(255,255,255, calc(0.95 * var(--vidro)));
+    overflow: hidden;
+  }
+  #chat-topo {
+    font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--apagado);
+    padding: 0.55rem 1rem; border-bottom: 1px solid var(--fio);
+  }
+  #chat-corpo {
+    flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none;
+    padding: 0.7rem 1rem 0.4rem;
+    display: flex; flex-direction: column; gap: 0.55rem;
+  }
+  #chat-corpo::-webkit-scrollbar { display: none; }
+
+  .quem {
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--apagado); margin-bottom: 0.2rem;
+  }
+  .bolha {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.87rem; line-height: 1.5; color: var(--tinta);
+    /* Azul fraco, não papel: é a bolha de quem envia, na convenção de
+       qualquer aplicativo de mensagem — e é a MESMA cor da bolha do
+       consulente na animação do oráculo (bloco 9), que a sala precisa
+       reconhecer como este aplicativo de roupa antiga. Alinhado em 16/08. */
+    background: rgba(46,95,150,0.06);
+    border: 1px solid var(--fio);
+    border-radius: 0.6rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .doVoce { align-self: flex-end; max-width: 86%; }
+  .doVoce .quem { text-align: right; }
+  .doModelo { align-self: flex-start; max-width: 96%; width: 96%; }
+  .doModelo .bolha { background: rgba(253,252,247,0.75); }
+  /* o canto reto aponta para quem falou, como nos aplicativos de conversa */
+  .doVoce .bolha { border-bottom-right-radius: 0.18rem; }
+  .doModelo .bolha { border-bottom-left-radius: 0.18rem; }
+  .surge { animation: chega .45s ease-out; }
+  @keyframes chega { from { opacity: 0; transform: translateY(0.4rem); } }
+
+  /* conversa nova: a anterior sai da tela e a janela fica vazia, como em
+     qualquer aplicativo de verdade — duas sessões nunca convivem na mesma
+     rolagem. O que sobra da primeira é o que estiver na sua cabeça. */
+  .saindo { animation: esvai .45s ease-in forwards; }
+  .vazia {
+    margin: auto;
+    font-size: 0.82rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--apagado);
+  }
+
+  /* raciocínio compactado */
+  .raciocinio {
+    border-left: 2px solid var(--fio);
+    padding: 0.15rem 0 0.15rem 0.7rem;
+    color: var(--apagado);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.8rem; line-height: 1.45;
+    align-self: flex-start; width: 96%;
+  }
+  .raciocinio .cab { color: var(--tinta-2); }
+  .raciocinio .cab .seta { display: inline-block; transform: translateY(-1px); }
+
+  /* linha de uso de ferramenta, dentro da conversa */
+  .uso {
+    align-self: flex-start; width: 96%;
+    border: 1px solid var(--fio); border-radius: 0.6rem;
+    background: rgba(46,95,150,0.05);
+    padding: 0.45rem 0.7rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.82rem; line-height: 1.5;
+  }
+  .uso .servico {
+    font-family: 'Spectral', Georgia, serif; font-weight: 600;
+    font-size: 0.88rem; color: var(--azul); letter-spacing: 0.02em;
+  }
+  .uso .acao { color: var(--tinta-2); }
+  .uso .saida { color: var(--tinta-2); margin-top: 0.2rem; white-space: pre-line; }
+  .uso .saida .acha { color: var(--tinta); background: rgba(46,95,150,0.15); border-radius: 3px; padding: 0 3px; }
+
+  #composer {
+    border-top: 1px solid var(--fio);
+    padding: 0.5rem 1rem 0.6rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  #campo {
+    flex: 1;
+    border: 1px solid var(--fio); border-radius: 1.1rem;
+    background: var(--papel);
+    padding: 0.4rem 0.85rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.85rem; line-height: 1.45; color: var(--tinta);
+    min-height: 2.1rem;
+  }
+  #campo.vazio::before { content: 'escreva aqui…'; color: var(--apagado); }
+  #campo .cursor {
+    display: inline-block; width: 0.5em; height: 1em; vertical-align: text-bottom;
+    background: var(--tinta-2); animation: pisca 1s steps(1) infinite;
+  }
+  @keyframes pisca { 50% { opacity: 0; } }
+  #enter {
+    font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--apagado); border: 1px solid var(--fio);
+    border-radius: 0.4rem; padding: 0.25rem 0.55rem;
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  #enter.aceso { color: var(--rubrica); border-color: var(--rubrica); background: rgba(142,43,33,0.06); }
+
+  /* ---------- coluna 3: o contexto ---------- */
+  #contexto-lista { display: flex; flex-direction: column; gap: 0.4rem; min-height: 0; }
+  .item {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.78rem; line-height: 1.4;
+    background: var(--exibido);
+    border: 1px solid var(--fio);
+    border-radius: 0.45rem;
+    padding: 0.32rem 0.55rem;
+    color: var(--tinta-2);
+  }
+  .item.seu { border-color: var(--rubrica); color: var(--tinta); }
+  .item.novo { animation: chega .5s ease-out; }
+  .item.some { animation: esvai .5s ease-in forwards; }
+  @keyframes esvai { to { opacity: 0; transform: translateX(0.6rem); } }
+  #contexto-conta { font-size: 0.76rem; color: var(--apagado); margin-top: 0.15rem; }
+
+  /* ---------- a janela do documento (a minuta) ---------- */
+  #doc {
+    position: absolute; z-index: 20;
+    /* acima da faixa do rodapé: a legenda continua legível com a janela
+       aberta, e é ela que explica o que acabou de acontecer */
+    right: 2.2rem; bottom: 6.6rem;
+    width: 26rem;
+    background: #FFFFFF;
+    border: 1px solid var(--fio);
+    border-radius: 0.5rem;
+    box-shadow: 0 1.2rem 3rem rgba(27,27,31,0.28);
+    opacity: 0; transform: translateY(1.2rem);
+    transition: opacity .5s, transform .5s;
+    pointer-events: none;
+  }
+  #doc.visivel { opacity: 1; transform: translateY(0); }
+  #doc .barra {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.74rem; color: var(--tinta-2);
+    background: var(--exibido);
+    border-bottom: 1px solid var(--fio);
+    border-radius: 0.5rem 0.5rem 0 0;
+    padding: 0.35rem 0.7rem;
+  }
+  #doc .barra .bolinhas { display: flex; gap: 0.28rem; }
+  #doc .barra .bolinhas i {
+    width: 0.55rem; height: 0.55rem; border-radius: 50%;
+    background: var(--fio); display: block;
+  }
+  #doc .pagina {
+    padding: 0.9rem 1.1rem 1rem;
+    font-size: 0.88rem; line-height: 1.55; color: var(--tinta);
+    text-align: justify;
+  }
+  #doc .pagina .ass { margin-top: 0.6rem; color: var(--tinta-2); }
+  #doc .aviso {
+    border-top: 1px solid var(--fio);
+    padding: 0.35rem 1.1rem 0.45rem;
+    font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--rubrica);
+  }
+
+  /* ---------- rodapé ---------- */
+  #rodape-area {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 1.8rem; align-items: end;
+    border-top: 1px solid var(--fio); padding-top: 0.6rem;
+  }
+  #legenda { font-size: 1rem; line-height: 1.45; color: var(--tinta-2); min-height: 2.9em; }
+  #nota { font-size: 0.76rem; color: var(--apagado); margin-top: 0.3rem; line-height: 1.4; }
+  #controles { display: flex; align-items: center; gap: 0.8rem; }
+  button {
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 0.95rem; color: var(--tinta);
+    background: var(--papel);
+    border: 1px solid var(--fio); border-radius: 0.5rem;
+    padding: 0.38rem 0.85rem; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { border-color: var(--apagado); }
+  button.ativo { border-color: var(--rubrica); color: var(--rubrica); }
+  button .tecla {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.75rem; color: var(--apagado); margin-left: 0.4rem;
+  }
+
+  .pulso {
+    position: absolute; z-index: 9;
+    width: 0.5rem; height: 0.5rem; border-radius: 50%;
+    background: var(--azul); box-shadow: 0 0 0.6rem rgba(46,95,150,0.65);
+    transition: left .5s ease-in-out, top .5s ease-in-out;
+    pointer-events: none;
+    transform: translate(-50%, -50%);  /* o ponto viaja centrado, não pelo canto */
+  }
+</style>
+</head>
+<body>
+
+<div class="cabeca">O que acontece depois que você aperta enter</div>
+
+<div id="meio">
+
+  <div class="coluna">
+    <div class="rotulo">As ferramentas em volta<br><b>o harness</b></div>
+    <div class="ferramenta" id="t-gmail">
+      <div class="titulo">
+        <span class="icone"><svg viewBox="0 0 52 40" aria-hidden="true"><path fill="#4285F4" d="M3.64 40h9.09V18.18L0 8.64v27.73C0 38.4 1.63 40 3.64 40z"/><path fill="#34A853" d="M39.27 40h9.09c2.01 0 3.64-1.6 3.64-3.64V8.64L39.27 18.18V40z"/><path fill="#FBBC04" d="M39.27 3.64v14.55L52 8.64V5.45c0-3.37-3.85-5.3-6.55-3.27l-6.18 1.46z"/><path fill="#EA4335" d="M12.73 18.18V3.64L26 13.59 39.27 3.64v14.55L26 28.14z"/><path fill="#C5221F" d="M0 5.45v3.19l12.73 9.55V3.64L6.55 2.18C3.85.15 0 2.08 0 5.45z"/></svg></span>
+        <span class="nome">Gmail</span>
+      </div>
+      <div class="oque" id="o-gmail">ler o e-mail do cliente</div>
+    </div>
+    <div class="ferramenta" id="t-arquivos">
+      <div class="titulo">
+        <span class="icone"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M2.6 6.6a1.6 1.6 0 0 1 1.6-1.6h4.5l1.9 2.3h9a1.6 1.6 0 0 1 1.6 1.6v8.9a1.6 1.6 0 0 1-1.6 1.6H4.2a1.6 1.6 0 0 1-1.6-1.6z"/></svg></span>
+        <span class="nome">Arquivos do caso</span>
+      </div>
+      <div class="oque" id="o-arquivos">ler e gravar na pasta</div>
+    </div>
+    <div class="ferramenta" id="t-google">
+      <div class="titulo">
+        <span class="icone"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.55 10.78l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.9l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
+        <span class="nome">Google</span>
+      </div>
+      <div class="oque" id="o-google">procurar lei e julgado</div>
+    </div>
+    <div class="rotulo fora">Não é ferramenta</div>
+    <div class="ferramenta humano" id="t-voce">
+      <div class="titulo">
+        <span class="icone"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4.1"/><path d="M4 20.4c0-3.9 3.6-6.3 8-6.3s8 2.4 8 6.3"/></svg></span>
+        <span class="nome">Você</span>
+      </div>
+      <div class="oque" id="o-voce">conferir e decidir</div>
+    </div>
+  </div>
+
+  <div id="chat">
+    <div id="chat-topo">a conversa — a janela onde você trabalha</div>
+    <div id="chat-corpo"></div>
+    <div id="composer">
+      <div id="campo" class="vazio"></div>
+      <div id="enter">enter ↵</div>
+    </div>
+  </div>
+
+  <div class="coluna">
+    <div class="rotulo">Contexto<br><b>tudo que ele enxerga</b></div>
+    <div id="contexto-lista"></div>
+    <div id="contexto-conta"></div>
+  </div>
+
+</div>
+
+<div id="doc">
+  <div class="barra">
+    <span class="bolinhas"><i></i><i></i><i></i></span>
+    minuta-resposta.docx — pasta do caso
+  </div>
+  <div class="pagina">
+    Prezado cliente,
+    <br><br>
+    Há bom fundamento para contestar a cobrança. A multa de 30% comporta
+    redução judicial: o art. 413 do Código Civil impõe ao juiz reduzir a
+    penalidade quando a obrigação já foi cumprida em parte — que é o seu
+    caso —, e o STJ, em situação semelhante, fixou a multa em 20%
+    (REsp 1.424.074-SP). Sugerimos responder à cobrança propondo [...]
+    <div class="ass">Atenciosamente,</div>
+  </div>
+  <div class="aviso">minuta — sujeita à sua revisão antes de qualquer envio</div>
+</div>
+
+<div id="rodape-area">
+  <div>
+    <div id="legenda"></div>
+    <div id="nota">ilustração encenada — nada aqui acessa internet de verdade. O ciclo pedido → ferramenta → contexto é o mecanismo real</div>
+  </div>
+  <div id="controles">
+    <button id="b-prox">próxima etapa<span class="tecla">espaço</span></button>
+    <button id="b-auto">automático<span class="tecla">A</span></button>
+    <button id="b-reinicia">reiniciar<span class="tecla">R</span></button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+const corpo = () => $('chat-corpo');
+
+/* ---------- os textos ---------- */
+
+const PROMPT1 = 'Dá para reduzir uma multa contratual de 30% por rescisão ' +
+  'antecipada? O cliente já tinha cumprido quase todo o contrato.';
+
+const RESP1 = 'Em regra, sim. O art. 413 do Código Civil determina que o juiz ' +
+  'reduza equitativamente a penalidade se a obrigação principal tiver sido ' +
+  'cumprida em parte, ou se o montante for manifestamente excessivo. Com o ' +
+  'contrato quase todo cumprido, há bom fundamento para pedir a redução — mas ' +
+  'recomendo confirmar os termos exatos da cláusula e a jurisprudência aplicável.';
+
+const PROMPT2 = 'É o caso de um cliente meu. O e-mail dele está no Gmail e o ' +
+  'contrato na pasta do caso: verifique a cláusula da multa, confirme a base ' +
+  'legal e o precedente na internet, e prepare uma minuta de resposta.';
+
+const RESP2 = 'Confirmado. A cláusula 9ª fixa a multa em 30% por rescisão ' +
+  'antecipada, e o e-mail relata que restava pouco a executar. O art. 413 do ' +
+  'Código Civil manda reduzir a penalidade nesse cenário, e o STJ, em caso ' +
+  'semelhante, fixou a multa em 20% (REsp 1.424.074-SP). Vou gravar a minuta ' +
+  'na pasta do caso.';
+
+const LEG_INICIAL = 'É a tela que você já usa — e nada acontece antes de ' +
+  'você escrever.';
+
+let etapa = 0, ocupado = false, auto = false, timerAuto = null;
+
+/* ---------- utilidades de cena ---------- */
+
+/* Rolagem direta, sem scrollTo suave: o suave depende de quadros de
+   animação, que não rodam com o slide escondido dentro do deck. */
+function rola() { const c = corpo(); c.scrollTop = c.scrollHeight; }
+
+async function digita(el, texto, vel = 12, seguir = true) {
+  let i = 0;
+  for (const ch of texto) {
+    el.textContent += ch;
+    if (seguir && ++i % 8 === 0) rola();
+    await dorme(vel);
+  }
+  if (seguir) rola();
+}
+
+function acende(id, texto) {
+  $(id).classList.add('acesa');
+  if (texto) $('o-' + id.slice(2)).textContent = texto;
+}
+function apaga(id, texto) {
+  $(id).classList.remove('acesa');
+  if (texto) $('o-' + id.slice(2)).textContent = texto;
+}
+
+function centro(el) {
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+async function pulso(deEl, paraEl) {
+  const p = document.createElement('div');
+  p.className = 'pulso';
+  const a = centro(deEl), b = centro(paraEl);
+  p.style.left = a.x + 'px'; p.style.top = a.y + 'px';
+  document.body.appendChild(p);
+  void p.offsetWidth;
+  p.style.left = b.x + 'px'; p.style.top = b.y + 'px';
+  await dorme(520);
+  p.remove();
+}
+
+function conta() {
+  const n = $('contexto-lista').children.length;
+  $('contexto-conta').textContent =
+    n === 0 ? 'vazio' : n === 1 ? '1 item na conversa' : n + ' itens na conversa';
+}
+
+async function contexto(texto, seu) {
+  const d = document.createElement('div');
+  d.className = 'item novo' + (seu ? ' seu' : '');
+  d.textContent = texto;
+  $('contexto-lista').appendChild(d);
+  conta();
+  await dorme(280);
+}
+
+async function esvaziaContexto() {
+  const itens = [...$('contexto-lista').children];
+  for (const i of itens) i.classList.add('some');
+  await dorme(520);
+  $('contexto-lista').innerHTML = '';
+  conta();
+}
+
+async function raciocinio(segundos, linhas) {
+  const d = document.createElement('div');
+  d.className = 'raciocinio surge';
+  d.innerHTML = `<div class="cab"><span class="seta">▸</span> raciocínio · pensou por ${segundos} s</div>`;
+  corpo().appendChild(d);
+  rola();
+  await dorme(420);
+  const p = document.createElement('div');
+  d.appendChild(p);
+  await digita(p, linhas, 13);
+}
+
+function bolha(quem, classe) {
+  const w = document.createElement('div');
+  w.className = 'bolha-wrap surge ' + classe;
+  w.innerHTML = `<div class="quem">${quem}</div>`;
+  const b = document.createElement('div');
+  b.className = 'bolha';
+  w.appendChild(b);
+  corpo().appendChild(w);
+  rola();
+  return b;
+}
+
+async function escreveNoCampo(texto) {
+  const vazia = corpo().querySelector('.vazia');
+  if (vazia) vazia.remove();
+  const campo = $('campo');
+  campo.classList.remove('vazio');
+  campo.innerHTML = '<span class="cursor"></span>';
+  const alvo = document.createTextNode('');
+  campo.insertBefore(alvo, campo.firstChild);
+  for (const ch of texto) { alvo.textContent += ch; await dorme(10); }
+  await dorme(350);
+  $('enter').classList.add('aceso');
+  await dorme(450);
+  $('enter').classList.remove('aceso');
+  campo.classList.add('vazio');
+  campo.innerHTML = '';
+  const b = bolha('você', 'doVoce');
+  b.textContent = texto;
+}
+
+async function usaFerramenta({ id, servico, acao, saida, resumo, contextos, legenda: leg }) {
+  const linha = document.createElement('div');
+  linha.className = 'uso surge';
+  linha.innerHTML = `<div><span class="servico">${servico}</span> <span class="acao">${acao}</span></div>`;
+  corpo().appendChild(linha);
+  rola();
+  await pulso(linha, $(id));
+  acende(id, 'em uso…');
+  await dorme(800);
+  const s = document.createElement('div');
+  s.className = 'saida';
+  s.innerHTML = saida;
+  linha.appendChild(s);
+  rola();
+  await dorme(350);
+  if (contextos.length) await pulso($(id), $('contexto-lista'));
+  apaga(id, resumo);
+  for (const c of contextos) await contexto(c);
+  if (leg) $('legenda').textContent = leg;
+}
+
+/* ---------- as onze etapas ---------- */
+
+const ETAPAS = [
+
+  /* ===== conversa 1 — sem pedido de verificação ===== */
+
+  // 1 — você pergunta, simples
+  async () => {
+    $('legenda').textContent = 'O gatilho é você. O modelo não acorda sozinho, não ' +
+      'vigia caixa de entrada — ele responde a um pedido. E este pedido não manda conferir nada.';
+    await escreveNoCampo(PROMPT1);
+    await contexto('o seu pedido', true);
+  },
+
+  // 2 — ele responde do treinamento
+  async () => {
+    await raciocinio(2, 'redução de cláusula penal — matéria de código, art. 413.\nrespondo direto');
+    const b = bolha('o modelo', 'doModelo');
+    await digita(b, RESP1, 8);
+    await contexto('a resposta dele');
+    $('legenda').textContent = 'Nenhuma ferramenta acendeu. Isso saiu inteiro do ' +
+      'treinamento — e saiu certo, porque é matéria de manual. Repare que ele ' +
+      'mesmo sugeriu confirmar.';
+  },
+
+  // 3 — conversa nova: a janela limpa e o contexto zera
+  async () => {
+    for (const f of [...corpo().children]) f.classList.add('saindo');
+    await dorme(470);
+    corpo().innerHTML = '';
+    const v = document.createElement('div');
+    v.className = 'vazia';
+    v.textContent = 'conversa nova';
+    corpo().appendChild(v);
+    await esvaziaContexto();
+    $('legenda').textContent = 'Conversa nova: a janela limpa e o contexto zera. Ele ' +
+      'não guarda nada da anterior — o que ficou, ficou com você. E o próximo pedido vai ser outro.';
+  },
+
+  /* ===== conversa 2 — com ordem de verificação ===== */
+
+  // 4 — você manda conferir
+  async () => {
+    await escreveNoCampo(PROMPT2);
+    await contexto('o seu pedido', true);
+    $('legenda').textContent = 'Mesmo caso, pedido diferente: agora você mandou ' +
+      'conferir — e-mail, contrato, internet. O rigor da resposta é você quem define, no pedido.';
+  },
+
+  // 5 — raciocínio: o plano
+  async () => {
+    await raciocinio(4, 'três fontes para checar: o e-mail, o contrato, a base legal.\n' +
+      'não vou citar precedente de memória — vou buscar');
+    $('legenda').textContent = 'A linha que interessa à noite inteira: em vez de citar ' +
+      'de cabeça, ele vai conferir. A diferença entre as duas coisas é o slide anterior.';
+  },
+
+  // 6 — Gmail
+  async () => {
+    await usaFerramenta({
+      id: 't-gmail', servico: 'Gmail', acao: 'procurar a mensagem do cliente',
+      saida: 'hoje, 08h12 — <span class="acha">“cobrança de multa — 30%”</span>\n' +
+             '“rescindi em julho, já tinha entregue quase tudo”',
+      resumo: '1 mensagem lida',
+      contextos: ['e-mail do cliente — multa de 30%'],
+      legenda: 'O modelo não abriu o Gmail: ele escreveu um pedido. Quem abriu foi a ' +
+        'ferramenta, e o que ela leu virou texto no contexto.'
+    });
+  },
+
+  // 7 — arquivos do caso
+  async () => {
+    await usaFerramenta({
+      id: 't-arquivos', servico: 'Arquivos do caso', acao: 'procurar o contrato na pasta',
+      saida: 'procuracao.pdf · notificacao-rescisao.pdf\n' +
+             '<span class="acha">contrato-prestacao-servicos.docx</span>\n' +
+             'cláusula 9ª — multa de 30% por rescisão antecipada',
+      resumo: 'contrato encontrado',
+      contextos: ['contrato — cláusula 9ª (30%)'],
+      legenda: 'A pasta é do seu computador, e o contrato estava lá o tempo todo. Sem ' +
+        'a ferramenta, ele só saberia do contrato o que você tivesse digitado.'
+    });
+  },
+
+  // 8 — Google
+  async () => {
+    await usaFerramenta({
+      id: 't-google', servico: 'Google', acao: 'redução de cláusula penal art. 413',
+      saida: 'planalto.gov.br — <span class="acha">Código Civil, art. 413</span>\n' +
+             'stj.jus.br — <span class="acha">REsp 1.424.074-SP</span> · multa fixada em 20%',
+      resumo: '2 fontes lidas',
+      contextos: ['art. 413 do Código Civil', 'REsp 1.424.074-SP — 20%'],
+      legenda: 'Agora o número do processo não saiu do sorteio: veio da página do ' +
+        'tribunal. Conferir continua sendo seu — mas deixou de ser invenção.'
+    });
+  },
+
+  // 9 — a resposta, agora ancorada
+  async () => {
+    const b = bolha('o modelo', 'doModelo');
+    await digita(b, RESP2, 8);
+    // a comparação com a conversa 1 vive aqui, na narração — a conversa
+    // antiga não pode reaparecer na tela sem mentir sobre a interface
+    $('legenda').textContent = 'Na primeira conversa ele terminou pedindo para você ' +
+      'confirmar a cláusula e a jurisprudência. Agora quem confirmou foi ele: cláusula, ' +
+      'e-mail e precedente, cada um com origem no contexto ao lado.';
+  },
+
+  // 10 — a minuta vira arquivo
+  async () => {
+    await usaFerramenta({
+      id: 't-arquivos', servico: 'Arquivos do caso', acao: 'gravar minuta-resposta.docx',
+      saida: 'gravado em <span class="acha">pasta do caso</span>',
+      resumo: 'minuta gravada',
+      contextos: ['minuta-resposta.docx'],
+      legenda: ''
+    });
+    $('doc').classList.add('visivel');
+    $('legenda').textContent = 'O produto final saiu do chat: virou arquivo na pasta, ' +
+      'pronto para abrir no editor de sempre. É assim que isso termina na vida real.';
+  },
+
+  // 11 — a revisão é sua
+  async () => {
+    acende('t-voce', 'é a sua vez');
+    await pulso($('doc'), $('t-voce'));
+    $('legenda').textContent = 'A última peça do escritório não é programa: é você. ' +
+      'Nada nessa tela assina petição, e nada nessa tela responde por ela.';
+  },
+];
+
+/* ---------- condução ---------- */
+
+async function umPasso() {
+  if (ocupado || etapa >= ETAPAS.length) return;
+  ocupado = true;
+  await ETAPAS[etapa]();
+  etapa++;
+  ocupado = false;
+  if (etapa >= ETAPAS.length) paraAuto();
+}
+
+function ligaAuto() {
+  auto = true; $('b-auto').classList.add('ativo');
+  const tique = async () => {
+    if (!auto) return;
+    await umPasso();
+    if (auto && etapa < ETAPAS.length) timerAuto = setTimeout(tique, 600);
+  };
+  tique();
+}
+function paraAuto() {
+  auto = false; $('b-auto').classList.remove('ativo');
+  if (timerAuto) clearTimeout(timerAuto);
+}
+
+function reinicia() {
+  paraAuto();
+  etapa = 0; ocupado = false;
+  corpo().innerHTML = '';
+  $('contexto-lista').innerHTML = '';
+  conta();
+  $('contexto-conta').textContent = '';
+  $('campo').className = 'vazio';
+  $('campo').innerHTML = '';
+  $('enter').classList.remove('aceso');
+  $('doc').classList.remove('visivel');
+  apaga('t-gmail', 'ler o e-mail do cliente');
+  apaga('t-arquivos', 'ler e gravar na pasta');
+  apaga('t-google', 'procurar lei e julgado');
+  apaga('t-voce', 'conferir e decidir');
+  $('legenda').textContent = LEG_INICIAL;
+}
+
+$('b-prox').addEventListener('click', umPasso);
+$('b-auto').addEventListener('click', () => (auto ? paraAuto() : ligaAuto()));
+$('b-reinicia').addEventListener('click', reinicia);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ') { e.preventDefault(); umPasso(); }
+  else if (e.key === 'a' || e.key === 'A') auto ? paraAuto() : ligaAuto();
+  else if (e.key === 'r' || e.key === 'R') reinicia();
+});
+
+reinicia();
+</script>
+</body>
+</html>
