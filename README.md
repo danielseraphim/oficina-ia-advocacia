@@ -35,6 +35,17 @@ precedente.**
 Os gabaritos das armadilhas plantadas no contrato e no distrato ficaram de
 fora. Elas se acham lendo, que é o exercício.
 
+## Licença
+
+O material está sob a licença [Creative Commons
+Atribuição-NãoComercial-CompartilhaIgual 4.0
+Internacional](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pt-br)
+(CC BY-NC-SA 4.0), cujo texto integral está no arquivo [LICENSE](LICENSE).
+
+Na prática: use em aula, adapte, imprima e distribua à vontade, desde que cite
+a origem, não cobre por isso e mantenha a mesma licença no que derivar daqui.
+Se quiser usar em algo comercial, me escreve.
+
 ## Ítaca
 
 Quando partires de volta para Ítaca, que a tua viagem seja longa. Tem coisa
