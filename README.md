@@ -44,7 +44,7 @@ Internacional](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pt-br)
 
 Na prática: use em aula, adapte, imprima e distribua à vontade, desde que cite
 a origem, não cobre por isso e mantenha a mesma licença no que derivar daqui.
-Se quiser usar em algo comercial, me escreve.
+Se quiser usar em algo comercial, me escreva.
 
 ## Ítaca
 
